@@ -1,4 +1,4 @@
-# 🔥 Wildfire Risk Prediction — Geospatial ML
+# Wildfire Risk Prediction — Geospatial ML
 
 A machine learning pipeline that predicts wildfire ignition risk across a geographic grid using satellite-derived features and historical fire occurrence data from NASA FIRMS.
 
