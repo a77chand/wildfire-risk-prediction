@@ -1,6 +1,6 @@
 PY ?= python
 
-.PHONY: install data train report export app test lint all
+.PHONY: install data tune train report export app test lint all
 install:
 	$(PY) -m pip install -e ".[app,dev]"
 
@@ -8,7 +8,10 @@ data:            ## download boundary, ignitions, weather and build the dataset 
 	$(PY) -m wildfire.cli fetch
 	$(PY) -m wildfire.cli build
 
-train:           ## fit models, evaluate on held-out years (--quick skips bootstrap / CV / ablation)
+tune:            ## forward-chaining CV hyperparameter search -> reports/tuning.json (~15 min)
+	$(PY) -m wildfire.cli tune
+
+train:           ## fit models for all four targets, evaluate on held-out years (--quick skips bootstrap / CV / ablation)
 	$(PY) -m wildfire.cli train
 
 report:          ## figures, SHAP, maps

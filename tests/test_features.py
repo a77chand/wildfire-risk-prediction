@@ -34,8 +34,8 @@ def test_neighbour_matrix(tiny_grid):
 def test_label_uses_only_the_following_week(small_cfg, tiny_grid, tiny_weather):
     ign = _ign(["2019-07-10"])  # lat 50.3 / lon -120.7 falls in the first tiny-grid cell (row 4, col 36)
     dates, arrays, counts, _ = F.daily_arrays(small_cfg, tiny_grid, tiny_weather, ign)
-    cell0 = int(np.argmax(counts.sum(axis=1)))
-    assert counts[cell0].sum() == 1
+    cell0 = int(np.argmax(counts["label"].sum(axis=1)))
+    assert counts["label"][cell0].sum() == 1
     d = dates.get_loc(pd.Timestamp("2019-07-10"))
     idx = np.array([d - 8, d - 7, d - 1, d, d + 1])
     rows = F.make_rows(tiny_grid, dates, arrays, counts, idx, horizon=7)

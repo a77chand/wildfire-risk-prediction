@@ -5,7 +5,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 
 
-@pytest.mark.skipif(not (ROOT / "artifacts" / "model.joblib").exists(), reason="artifacts not exported")
+@pytest.mark.skipif(not (ROOT / "artifacts" / "model_label.joblib").exists(), reason="artifacts not exported")
 def test_streamlit_app_renders_backtest_without_errors():
     from streamlit.testing.v1 import AppTest
 
@@ -13,3 +13,5 @@ def test_streamlit_app_renders_backtest_without_errors():
     assert not at.exception, at.exception
     assert at.title[0].value.startswith("🔥")
     assert len(at.tabs) == 3
+    at.radio[0].set_value("label_person").run()      # target switch
+    assert not at.exception, at.exception

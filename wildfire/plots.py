@@ -24,7 +24,8 @@ MODEL_STYLE = {
 }
 RISK_CMAP = LinearSegmentedColormap.from_list("risk", RISK_RAMP)
 GROUP_COLORS = {
-    "Weather": BLUE, "Fire Weather Index codes": ORANGE, "Location / terrain": AQUA,
+    "Weather": BLUE, "Fire Weather Index codes": ORANGE, "Neighbourhood & trend": "#8fb8ee",
+    "Location / terrain / access": AQUA,
     "Seasonality": "#eda100", "Recent ignitions": "#6250d6", "Local ignition history": "#e87ba4",
 }
 
@@ -188,5 +189,92 @@ def fig_risk_map(grid, cell_deg, boundary, risk: pd.Series, ignitions: pd.DataFr
     ax.set_aspect(1 / np.cos(np.deg2rad(54.5)))
     ax.set(title=title, xlabel="Longitude", ylabel="Latitude")
     ax.grid(False)
+    fig.tight_layout()
+    return _save(fig, path)
+
+
+def fig_weekly_capture(tab: pd.DataFrame, path, n_cells: int | None = None):
+    """Share of ignition cell-weeks inside the K highest-risk cells watched each week."""
+    fig, ax = plt.subplots(figsize=(7.4, 4.6))
+    for name in ("Random", "Climatology", "Logistic regression", "Random forest", "Gradient boosting"):
+        if name not in tab:
+            continue
+        st = dict(MODEL_STYLE.get(name, dict(color=MUTED, ls=":", lw=1.2)))
+        ax.plot(tab.index, tab[name] * 100, marker="o" if name == "Gradient boosting" else None,
+                ms=5, label=name, **st)
+    k = 30
+    if k in tab.index:
+        v, c = tab.loc[k, "Gradient boosting"] * 100, tab.loc[k, "Climatology"] * 100
+        ax.annotate(f"watch {k} cells/week:\n{v:.0f}% of ignitions covered\n(climatology {c:.0f}%)",
+                    xy=(k, v), xytext=(k + 8, v + 30), fontsize=9, color=INK2,
+                    arrowprops=dict(arrowstyle="-", color=MUTED))
+    ax.set(xlabel=f"Cells watched per week (of ~{n_cells or 616})",
+           ylabel="Ignition cell-weeks inside watched cells (%)",
+           title="Operational value: where to look each week", ylim=(0, 100))
+    ax.legend(loc="lower right", fontsize=8.5)
+    fig.tight_layout()
+    return _save(fig, path)
+
+
+def fig_target_drivers(drivers: dict[str, dict[str, float]], descriptions: dict[str, str], path,
+                       top: int = 8):
+    """Top SHAP drivers for each non-primary target, side by side."""
+    from .features import FEATURE_GROUPS
+
+    group_of = {f: g for g, fs in FEATURE_GROUPS.items() for f in fs}
+    names = [t for t in drivers]
+    fig, axes = plt.subplots(1, len(names), figsize=(4.2 * len(names), 4.4))
+    axes = np.atleast_1d(axes)
+    for ax, t in zip(axes, names, strict=True):
+        imp = pd.Series(drivers[t]).sort_values().tail(top)
+        ax.barh(imp.index, imp.values, color=[GROUP_COLORS[group_of[f]] for f in imp.index], height=0.65)
+        ax.set_title(descriptions[t], fontsize=10.5)
+        ax.set_xlabel("Mean |SHAP| (log-odds)")
+        ax.grid(axis="y", visible=False)
+    handles = [plt.Rectangle((0, 0), 1, 1, color=c) for c in GROUP_COLORS.values()]
+    fig.legend(handles, GROUP_COLORS.keys(), loc="lower center", ncol=3, fontsize=8.5,
+               bbox_to_anchor=(0.5, -0.12))
+    fig.suptitle("Different ignition types, different drivers", fontweight="bold", y=1.0)
+    fig.tight_layout()
+    return _save(fig, path)
+
+
+def fig_targets_summary(summary: dict, path):
+    """PR-AUC of climatology vs the boosted model for each target, against the no-skill base rate."""
+    rows = []
+    for e in summary.values():
+        base, boost = e["test"]["pr_auc"]["Climatology"], e["test"]["pr_auc"]["Gradient boosting"]
+        rows.append((e["description"], base, boost, e["test"]["prevalence"]["Climatology"]))
+    df = pd.DataFrame(rows, columns=["target", "climatology", "boosted", "prevalence"]).set_index("target")
+    fig, ax = plt.subplots(figsize=(8.2, 3.8))
+    x = np.arange(len(df))
+    w = 0.36
+    ax.bar(x - w / 2, df["climatology"], w - 0.04, color=INK2, label="Climatology baseline")
+    ax.bar(x + w / 2, df["boosted"], w - 0.04, color=BLUE, label="Gradient boosting")
+    ax.scatter(x, df["prevalence"], marker="_", s=900, color=MUTED, zorder=5, label="Base rate (no skill)")
+    ax.set_xticks(x, [t.replace(" (>=", "\n(>=") for t in df.index], fontsize=8.5)
+    ax.set(ylabel="PR-AUC (test years)", title="Skill by target")
+    ax.grid(axis="x", visible=False)
+    ax.legend(fontsize=8.5)
+    fig.tight_layout()
+    return _save(fig, path)
+
+
+def fig_temporal_skill(totals: dict[str, pd.DataFrame], skill: pd.DataFrame, path):
+    """Expected vs observed number of ignition cell-weeks per week, climatology vs boosted model."""
+    fig, ax = plt.subplots(1, len(totals), figsize=(5.4 * len(totals), 4.8), sharex=True, sharey=True)
+    ax = np.atleast_1d(ax)
+    hi = max(max(t["observed"].max(), t["expected"].max()) for t in totals.values()) * 1.05
+    for a, (name, t) in zip(ax, totals.items(), strict=True):
+        st = MODEL_STYLE[name]
+        a.scatter(t["expected"], t["observed"], s=22, color=st["color"], alpha=0.75, edgecolor=SURFACE,
+                  linewidth=0.5)
+        a.plot([0, hi], [0, hi], color=MUTED, lw=0.9, ls=":")
+        a.text(0.04, 0.93, f"Spearman {skill.loc[name, 'spearman']:.2f}\nR² {skill.loc[name, 'r2']:.2f}",
+               transform=a.transAxes, va="top", fontsize=10, color=INK)
+        a.set(title=name, xlabel="Expected ignition cells that week (sum of probabilities)",
+              xlim=(0, hi), ylim=(0, hi))
+    ax[0].set_ylabel("Observed ignition cells that week")
+    fig.suptitle("Does the model know which weeks are dangerous? (test years)", fontweight="bold")
     fig.tight_layout()
     return _save(fig, path)

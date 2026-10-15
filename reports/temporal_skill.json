@@ -1,0 +1,50 @@
+{
+  "label": {
+    "Climatology": {
+      "spearman": 0.6754,
+      "pearson": 0.662,
+      "r2": 0.4307
+    },
+    "Gradient boosting": {
+      "spearman": 0.8802,
+      "pearson": 0.8056,
+      "r2": 0.6473
+    }
+  },
+  "label_large": {
+    "Climatology": {
+      "spearman": 0.5595,
+      "pearson": 0.5332,
+      "r2": 0.1842
+    },
+    "Gradient boosting": {
+      "spearman": 0.6872,
+      "pearson": 0.5685,
+      "r2": 0.2549
+    }
+  },
+  "label_lightning": {
+    "Climatology": {
+      "spearman": 0.7948,
+      "pearson": 0.6948,
+      "r2": 0.4517
+    },
+    "Gradient boosting": {
+      "spearman": 0.8995,
+      "pearson": 0.7978,
+      "r2": 0.6218
+    }
+  },
+  "label_person": {
+    "Climatology": {
+      "spearman": 0.3353,
+      "pearson": 0.3357,
+      "r2": 0.0554
+    },
+    "Gradient boosting": {
+      "spearman": 0.6943,
+      "pearson": 0.6641,
+      "r2": 0.4188
+    }
+  }
+}

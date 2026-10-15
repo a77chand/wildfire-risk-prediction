@@ -18,23 +18,44 @@ WEATHER_FEATURES = [
     "days_since_rain", "tmax_7d", "rh_min_7d",
 ]
 FWI_FEATURES = ["ffmc", "dmc", "dc", "isi", "bui", "fwi"]
-STATIC_FEATURES = ["lat", "lon", "elevation"]
+CONTEXT_FEATURES = ["nbr_fwi", "nbr_dc", "fwi_max_7d", "fwi_chg_7d", "tmax_max_7d", "wind_max_7d"]
+STATIC_FEATURES = ["lat", "lon", "elevation", "road_log"]
 SEASON_FEATURES = ["doy_sin", "doy_cos"]
 ACTIVITY_FEATURES = ["ign_cell_7d", "ign_cell_30d", "ign_nbr_30d"]
 
 RATE_FEATURES = ["rate_cell_month", "rate_cell"]   # added by LocalRateEncoder at training time
 
-FEATURES = WEATHER_FEATURES + FWI_FEATURES + STATIC_FEATURES + SEASON_FEATURES + ACTIVITY_FEATURES
+FEATURES = (WEATHER_FEATURES + FWI_FEATURES + CONTEXT_FEATURES + STATIC_FEATURES
+            + SEASON_FEATURES + ACTIVITY_FEATURES)
 MODEL_FEATURES = FEATURES + RATE_FEATURES
 FEATURE_GROUPS = {
     "Weather": WEATHER_FEATURES,
     "Fire Weather Index codes": FWI_FEATURES,
-    "Location / terrain": STATIC_FEATURES,
+    "Neighbourhood & trend": CONTEXT_FEATURES,
+    "Location / terrain / access": STATIC_FEATURES,
     "Seasonality": SEASON_FEATURES,
     "Recent ignitions": ACTIVITY_FEATURES,
     "Local ignition history": RATE_FEATURES,
 }
 LABEL = "label"
+
+# Prediction targets: label column -> human description. "label" (any ignition) is the primary one.
+TARGETS = {
+    "label": "any ignition",
+    "label_large": "large fire (>= 10 ha)",
+    "label_lightning": "lightning-caused ignition",
+    "label_person": "person-caused ignition",
+}
+
+
+def target_masks(ign: pd.DataFrame, large_fire_ha: float) -> dict[str, np.ndarray]:
+    """Boolean mask over ``ign`` rows for each target."""
+    return {
+        "label": np.ones(len(ign), dtype=bool),
+        "label_large": (ign["size_ha"].fillna(0) >= large_fire_ha).to_numpy(),
+        "label_lightning": (ign["cause"] == "Lightning").to_numpy(),
+        "label_person": (ign["cause"] == "Person").to_numpy(),
+    }
 
 
 # ----------------------------------------------------------------------------- helpers
@@ -129,6 +150,18 @@ def daily_arrays(cfg: Config, grid: pd.DataFrame, weather: pd.DataFrame, ign: pd
         for k in FWI_FEATURES:
             a[k][:, sel] = out[k]
 
+    # --- neighbourhood context and short-term trends -------------------------------------
+    nbr = neighbour_matrix(grid)
+    deg = np.maximum(nbr.sum(axis=1, keepdims=True), 1.0)
+    a["nbr_fwi"] = (nbr @ np.nan_to_num(a["fwi"])) / deg
+    a["nbr_dc"] = (nbr @ np.nan_to_num(a["dc"])) / deg
+    a["fwi_max_7d"] = _rolling(a["fwi"], 7, "max")
+    prev = np.full_like(a["fwi"], np.nan)
+    prev[:, 7:] = a["fwi"][:, :-7]
+    a["fwi_chg_7d"] = a["fwi"] - prev
+    a["tmax_max_7d"] = _rolling(tmax, 7, "max", 3)
+    a["wind_max_7d"] = _rolling(wind_kmh, 7, "max", 3)
+
     # --- static + seasonal --------------------------------------------------------------
     nd = len(dates)
     for k in STATIC_FEATURES:
@@ -138,10 +171,15 @@ def daily_arrays(cfg: Config, grid: pd.DataFrame, weather: pd.DataFrame, ign: pd
     a["doy_cos"] = np.tile(np.cos(2 * np.pi * doy / 365.25), (len(cells), 1))
 
     # --- recent ignition activity (known at prediction time) -------------------------
-    counts, dropped = ignition_counts(cfg, grid, ign, dates)
-    a["ign_cell_7d"] = _rolling(counts, 7, "sum")
-    a["ign_cell_30d"] = _rolling(counts, 30, "sum")
-    a["ign_nbr_30d"] = neighbour_matrix(grid) @ a["ign_cell_30d"]
+    large = float(cfg["label"].get("large_fire_ha", 10.0))
+    counts, dropped = {}, 0
+    for name, mask in target_masks(ign, large).items():
+        counts[name], n_out = ignition_counts(cfg, grid, ign[mask], dates)
+        if name == LABEL:
+            dropped = n_out
+    a["ign_cell_7d"] = _rolling(counts[LABEL], 7, "sum")
+    a["ign_cell_30d"] = _rolling(counts[LABEL], 30, "sum")
+    a["ign_nbr_30d"] = nbr @ a["ign_cell_30d"]
     return dates, a, counts, dropped
 
 
@@ -177,14 +215,16 @@ def feature_rows(grid: pd.DataFrame, dates, arrays, idx: np.ndarray) -> pd.DataF
     return df
 
 
-def make_rows(grid: pd.DataFrame, dates, arrays, counts, idx: np.ndarray, horizon: int):
-    """Training table: features at date t, label = any ignition on days t+1 .. t+horizon."""
+def make_rows(grid: pd.DataFrame, dates, arrays, counts: dict, idx: np.ndarray, horizon: int):
+    """Training table: features at date t; each label = any matching ignition on days t+1 .. t+horizon."""
     nc = len(grid)
-    cum = np.concatenate([np.zeros((nc, 1), dtype=np.float32), np.cumsum(counts, axis=1)], axis=1)
-    future = cum[:, idx + 1 + horizon] - cum[:, idx + 1]
     df = feature_rows(grid, dates, arrays, idx)
-    df["n_next"] = future.ravel()
-    df[LABEL] = (df["n_next"] > 0).astype(np.int8)
+    for name, c in counts.items():
+        cum = np.concatenate([np.zeros((nc, 1), dtype=np.float32), np.cumsum(c, axis=1)], axis=1)
+        future = (cum[:, idx + 1 + horizon] - cum[:, idx + 1]).ravel()
+        df[name] = (future > 0).astype(np.int8)
+        if name == LABEL:
+            df["n_next"] = future
     return df.sort_values(["date", "cell_id"]).reset_index(drop=True)
 
 
@@ -217,16 +257,17 @@ class LocalRateEncoder:
 
     KEYS = {"rate_cell_month": ["cell_id", "month"], "rate_cell": ["cell_id"]}
 
-    def __init__(self, prior_weight: float = 10.0):
+    def __init__(self, prior_weight: float = 10.0, label_col: str = LABEL):
         self.prior_weight = prior_weight
+        self.label_col = label_col
 
     def fit(self, df: pd.DataFrame):
         d = df.assign(month=df["date"].dt.month)
-        self.global_rate_ = float(d[LABEL].mean())
+        self.global_rate_ = float(d[self.label_col].mean())
         self.years_ = set(d["year"].unique())
         self.tot_, self.yr_ = {}, {}
         for name, key in self.KEYS.items():
-            g = d.groupby(key + ["year"])[LABEL].agg(S="sum", N="count").reset_index()
+            g = d.groupby(key + ["year"])[self.label_col].agg(S="sum", N="count").reset_index()
             self.yr_[name] = g.set_index(key + ["year"])
             self.tot_[name] = g.groupby(key)[["S", "N"]].sum()
         return self

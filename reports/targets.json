@@ -1,0 +1,570 @@
+{
+  "targets": {
+    "label": {
+      "description": "any ignition",
+      "best_iteration": 502,
+      "test": {
+        "roc_auc": {
+          "Climatology": 0.86086,
+          "Gradient boosting": 0.88679
+        },
+        "pr_auc": {
+          "Climatology": 0.28078,
+          "Gradient boosting": 0.32201
+        },
+        "brier": {
+          "Climatology": 0.04467,
+          "Gradient boosting": 0.04321
+        },
+        "brier_skill": {
+          "Climatology": 0.14222,
+          "Gradient boosting": 0.17027
+        },
+        "log_loss": {
+          "Climatology": 0.16222,
+          "Gradient boosting": 0.15278
+        },
+        "ece": {
+          "Climatology": 0.00477,
+          "Gradient boosting": 0.00564
+        },
+        "capture_top5": {
+          "Climatology": 0.31129,
+          "Gradient boosting": 0.34645
+        },
+        "capture_top10": {
+          "Climatology": 0.49468,
+          "Gradient boosting": 0.53668
+        },
+        "precision_top5": {
+          "Climatology": 0.34311,
+          "Gradient boosting": 0.38186
+        },
+        "lift_top5": {
+          "Climatology": 6.22577,
+          "Gradient boosting": 6.92892
+        },
+        "prevalence": {
+          "Climatology": 0.05511,
+          "Gradient boosting": 0.05511
+        },
+        "n": {
+          "Climatology": 95480.0,
+          "Gradient boosting": 95480.0
+        }
+      },
+      "weekly_capture": {
+        "Climatology": {
+          "10": 0.09388,
+          "30": 0.2385,
+          "50": 0.35595
+        },
+        "Gradient boosting": {
+          "10": 0.0992,
+          "30": 0.24363,
+          "50": 0.35804
+        },
+        "Random": {
+          "10": 0.01623,
+          "30": 0.0487,
+          "50": 0.08117
+        }
+      },
+      "bootstrap": [
+        {
+          "model": "Climatology",
+          "metric": "roc_auc",
+          "mean": 0.8604812145,
+          "lo": 0.8472531795,
+          "hi": 0.8732427998
+        },
+        {
+          "model": "Climatology",
+          "metric": "pr_auc",
+          "mean": 0.2794127019,
+          "lo": 0.2453046562,
+          "hi": 0.3135351
+        },
+        {
+          "model": "Gradient boosting",
+          "metric": "roc_auc",
+          "mean": 0.8866847305,
+          "lo": 0.8755311879,
+          "hi": 0.8960941261
+        },
+        {
+          "model": "Gradient boosting",
+          "metric": "pr_auc",
+          "mean": 0.3210011732,
+          "lo": 0.2890188008,
+          "hi": 0.3574590245
+        },
+        {
+          "model": "Gradient boosting",
+          "metric": "roc_auc - ref",
+          "mean": 0.026203516,
+          "lo": 0.0199007765,
+          "hi": 0.0326869049
+        },
+        {
+          "model": "Gradient boosting",
+          "metric": "pr_auc - ref",
+          "mean": 0.0415884714,
+          "lo": 0.0207458665,
+          "hi": 0.0614146429
+        }
+      ],
+      "new_features": {
+        "without": {
+          "roc_auc": 0.8861366863653097,
+          "pr_auc": 0.32319843905006357,
+          "log_loss": 0.15300788004202107
+        },
+        "with": {
+          "roc_auc": 0.8867946885932676,
+          "pr_auc": 0.32201434754850006,
+          "log_loss": 0.15277516571977037
+        }
+      }
+    },
+    "label_large": {
+      "description": "large fire (>= 10 ha)",
+      "best_iteration": 260,
+      "test": {
+        "roc_auc": {
+          "Climatology": 0.78764,
+          "Gradient boosting": 0.85475
+        },
+        "pr_auc": {
+          "Climatology": 0.04742,
+          "Gradient boosting": 0.06221
+        },
+        "brier": {
+          "Climatology": 0.00976,
+          "Gradient boosting": 0.00974
+        },
+        "brier_skill": {
+          "Climatology": 0.01908,
+          "Gradient boosting": 0.02115
+        },
+        "log_loss": {
+          "Climatology": 0.05333,
+          "Gradient boosting": 0.04841
+        },
+        "ece": {
+          "Climatology": 0.00352,
+          "Gradient boosting": 0.00374
+        },
+        "capture_top5": {
+          "Climatology": 0.3125,
+          "Gradient boosting": 0.35833
+        },
+        "capture_top10": {
+          "Climatology": 0.46354,
+          "Gradient boosting": 0.51979
+        },
+        "precision_top5": {
+          "Climatology": 0.06284,
+          "Gradient boosting": 0.07206
+        },
+        "lift_top5": {
+          "Climatology": 6.25,
+          "Gradient boosting": 7.16667
+        },
+        "prevalence": {
+          "Climatology": 0.01005,
+          "Gradient boosting": 0.01005
+        },
+        "n": {
+          "Climatology": 95480.0,
+          "Gradient boosting": 95480.0
+        }
+      },
+      "weekly_capture": {
+        "Climatology": {
+          "10": 0.07917,
+          "30": 0.17396,
+          "50": 0.27812
+        },
+        "Gradient boosting": {
+          "10": 0.07083,
+          "30": 0.18125,
+          "50": 0.27187
+        },
+        "Random": {
+          "10": 0.01623,
+          "30": 0.0487,
+          "50": 0.08117
+        }
+      },
+      "bootstrap": [
+        {
+          "model": "Climatology",
+          "metric": "roc_auc",
+          "mean": 0.7866767074,
+          "lo": 0.7576038354,
+          "hi": 0.8162473232
+        },
+        {
+          "model": "Climatology",
+          "metric": "pr_auc",
+          "mean": 0.0476641949,
+          "lo": 0.0343257055,
+          "hi": 0.0656058805
+        },
+        {
+          "model": "Gradient boosting",
+          "metric": "roc_auc",
+          "mean": 0.8544100496,
+          "lo": 0.8318920181,
+          "hi": 0.8745208829
+        },
+        {
+          "model": "Gradient boosting",
+          "metric": "pr_auc",
+          "mean": 0.062723655,
+          "lo": 0.0451545924,
+          "hi": 0.0879039108
+        },
+        {
+          "model": "Gradient boosting",
+          "metric": "roc_auc - ref",
+          "mean": 0.0677333422,
+          "lo": 0.042300996,
+          "hi": 0.0935450106
+        },
+        {
+          "model": "Gradient boosting",
+          "metric": "pr_auc - ref",
+          "mean": 0.0150594601,
+          "lo": 0.0052699384,
+          "hi": 0.027907047
+        }
+      ],
+      "new_features": {
+        "without": {
+          "roc_auc": 0.8503937217872761,
+          "pr_auc": 0.060418201816770566,
+          "log_loss": 0.048676547577051775
+        },
+        "with": {
+          "roc_auc": 0.8547456667019324,
+          "pr_auc": 0.062213380010512354,
+          "log_loss": 0.048406959606176
+        }
+      }
+    },
+    "label_lightning": {
+      "description": "lightning-caused ignition",
+      "best_iteration": 374,
+      "test": {
+        "roc_auc": {
+          "Climatology": 0.88549,
+          "Gradient boosting": 0.91385
+        },
+        "pr_auc": {
+          "Climatology": 0.2335,
+          "Gradient boosting": 0.27543
+        },
+        "brier": {
+          "Climatology": 0.02713,
+          "Gradient boosting": 0.0262
+        },
+        "brier_skill": {
+          "Climatology": 0.12627,
+          "Gradient boosting": 0.15607
+        },
+        "log_loss": {
+          "Climatology": 0.10589,
+          "Gradient boosting": 0.09799
+        },
+        "ece": {
+          "Climatology": 0.00606,
+          "Gradient boosting": 0.00464
+        },
+        "capture_top5": {
+          "Climatology": 0.42083,
+          "Gradient boosting": 0.45935
+        },
+        "capture_top10": {
+          "Climatology": 0.60888,
+          "Gradient boosting": 0.6572
+        },
+        "precision_top5": {
+          "Climatology": 0.27,
+          "Gradient boosting": 0.29472
+        },
+        "lift_top5": {
+          "Climatology": 8.41659,
+          "Gradient boosting": 9.18707
+        },
+        "prevalence": {
+          "Climatology": 0.03208,
+          "Gradient boosting": 0.03208
+        },
+        "n": {
+          "Climatology": 95480.0,
+          "Gradient boosting": 95480.0
+        }
+      },
+      "weekly_capture": {
+        "Climatology": {
+          "10": 0.07738,
+          "30": 0.19654,
+          "50": 0.30754
+        },
+        "Gradient boosting": {
+          "10": 0.06464,
+          "30": 0.18805,
+          "50": 0.30232
+        },
+        "Random": {
+          "10": 0.01623,
+          "30": 0.0487,
+          "50": 0.08117
+        }
+      },
+      "bootstrap": [
+        {
+          "model": "Climatology",
+          "metric": "roc_auc",
+          "mean": 0.8848704878,
+          "lo": 0.8684017251,
+          "hi": 0.9029906997
+        },
+        {
+          "model": "Climatology",
+          "metric": "pr_auc",
+          "mean": 0.2328753238,
+          "lo": 0.1895294272,
+          "hi": 0.2852781062
+        },
+        {
+          "model": "Gradient boosting",
+          "metric": "roc_auc",
+          "mean": 0.913679232,
+          "lo": 0.8995859653,
+          "hi": 0.9262514052
+        },
+        {
+          "model": "Gradient boosting",
+          "metric": "pr_auc",
+          "mean": 0.276227171,
+          "lo": 0.232560514,
+          "hi": 0.3273357469
+        },
+        {
+          "model": "Gradient boosting",
+          "metric": "roc_auc - ref",
+          "mean": 0.0288087443,
+          "lo": 0.0205754273,
+          "hi": 0.039136975
+        },
+        {
+          "model": "Gradient boosting",
+          "metric": "pr_auc - ref",
+          "mean": 0.0433518472,
+          "lo": 0.0175314806,
+          "hi": 0.0748336435
+        }
+      ],
+      "new_features": {
+        "without": {
+          "roc_auc": 0.9147046507969309,
+          "pr_auc": 0.2816658506487757,
+          "log_loss": 0.09764878615612674
+        },
+        "with": {
+          "roc_auc": 0.9138516719934324,
+          "pr_auc": 0.2754296586066848,
+          "log_loss": 0.09799132672063957
+        }
+      }
+    },
+    "label_person": {
+      "description": "person-caused ignition",
+      "best_iteration": 287,
+      "test": {
+        "roc_auc": {
+          "Climatology": 0.8712,
+          "Gradient boosting": 0.90602
+        },
+        "pr_auc": {
+          "Climatology": 0.17745,
+          "Gradient boosting": 0.20403
+        },
+        "brier": {
+          "Climatology": 0.02153,
+          "Gradient boosting": 0.02114
+        },
+        "brier_skill": {
+          "Climatology": 0.09304,
+          "Gradient boosting": 0.10944
+        },
+        "log_loss": {
+          "Climatology": 0.08744,
+          "Gradient boosting": 0.08199
+        },
+        "ece": {
+          "Climatology": 0.00181,
+          "Gradient boosting": 0.00249
+        },
+        "capture_top5": {
+          "Climatology": 0.39432,
+          "Gradient boosting": 0.43521
+        },
+        "capture_top10": {
+          "Climatology": 0.58803,
+          "Gradient boosting": 0.63409
+        },
+        "precision_top5": {
+          "Climatology": 0.19187,
+          "Gradient boosting": 0.21177
+        },
+        "lift_top5": {
+          "Climatology": 7.88635,
+          "Gradient boosting": 8.70426
+        },
+        "prevalence": {
+          "Climatology": 0.02433,
+          "Gradient boosting": 0.02433
+        },
+        "n": {
+          "Climatology": 95480.0,
+          "Gradient boosting": 95480.0
+        }
+      },
+      "weekly_capture": {
+        "Climatology": {
+          "10": 0.1653,
+          "30": 0.36505,
+          "50": 0.5028
+        },
+        "Gradient boosting": {
+          "10": 0.17477,
+          "30": 0.39217,
+          "50": 0.53638
+        },
+        "Random": {
+          "10": 0.01623,
+          "30": 0.0487,
+          "50": 0.08117
+        }
+      },
+      "bootstrap": [
+        {
+          "model": "Climatology",
+          "metric": "roc_auc",
+          "mean": 0.8709031958,
+          "lo": 0.8613501789,
+          "hi": 0.8795414237
+        },
+        {
+          "model": "Climatology",
+          "metric": "pr_auc",
+          "mean": 0.1768853321,
+          "lo": 0.1605082347,
+          "hi": 0.1930634104
+        },
+        {
+          "model": "Gradient boosting",
+          "metric": "roc_auc",
+          "mean": 0.9059471199,
+          "lo": 0.9000633519,
+          "hi": 0.9107282808
+        },
+        {
+          "model": "Gradient boosting",
+          "metric": "pr_auc",
+          "mean": 0.2044623318,
+          "lo": 0.1839585086,
+          "hi": 0.2276881821
+        },
+        {
+          "model": "Gradient boosting",
+          "metric": "roc_auc - ref",
+          "mean": 0.0350439242,
+          "lo": 0.0264925084,
+          "hi": 0.0424599614
+        },
+        {
+          "model": "Gradient boosting",
+          "metric": "pr_auc - ref",
+          "mean": 0.0275769997,
+          "lo": 0.0150878691,
+          "hi": 0.0394074852
+        }
+      ],
+      "new_features": {
+        "without": {
+          "roc_auc": 0.9049923570857802,
+          "pr_auc": 0.20397897891413905,
+          "log_loss": 0.08222255669143479
+        },
+        "with": {
+          "roc_auc": 0.9060232751738717,
+          "pr_auc": 0.20402866289562382,
+          "log_loss": 0.08199039097898102
+        }
+      }
+    }
+  },
+  "drivers": {
+    "label": {
+      "rate_cell": 0.52457,
+      "road_log": 0.44758,
+      "rate_cell_month": 0.30123,
+      "doy_sin": 0.26583,
+      "doy_cos": 0.26341,
+      "ign_nbr_30d": 0.21389,
+      "nbr_fwi": 0.18269,
+      "dmc": 0.17334,
+      "bui": 0.15621,
+      "lat": 0.12047,
+      "precip_30d": 0.09941,
+      "vpd": 0.08872
+    },
+    "label_large": {
+      "doy_sin": 0.30581,
+      "road_log": 0.20195,
+      "elevation": 0.19232,
+      "ign_nbr_30d": 0.17611,
+      "nbr_fwi": 0.17031,
+      "rh": 0.16301,
+      "dmc": 0.15603,
+      "lon": 0.1462,
+      "precip_30d": 0.14205,
+      "doy_cos": 0.11923,
+      "rate_cell_month": 0.10709,
+      "tmax_7d": 0.0971
+    },
+    "label_lightning": {
+      "doy_cos": 0.55459,
+      "doy_sin": 0.24693,
+      "vpd": 0.23337,
+      "tmax": 0.23039,
+      "ign_nbr_30d": 0.21639,
+      "rate_cell_month": 0.20614,
+      "bui": 0.20591,
+      "rate_cell": 0.18507,
+      "elevation": 0.17237,
+      "tmax_7d": 0.16707,
+      "tmax_max_7d": 0.16463,
+      "road_log": 0.1605
+    },
+    "label_person": {
+      "rate_cell": 0.82267,
+      "road_log": 0.74696,
+      "precip_30d": 0.14646,
+      "doy_cos": 0.14244,
+      "rate_cell_month": 0.13729,
+      "lat": 0.11985,
+      "doy_sin": 0.11174,
+      "ign_nbr_30d": 0.10353,
+      "lon": 0.10266,
+      "precip_7d": 0.09103,
+      "nbr_fwi": 0.08806,
+      "bui": 0.08143
+    }
+  }
+}

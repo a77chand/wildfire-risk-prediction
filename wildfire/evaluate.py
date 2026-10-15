@@ -76,14 +76,14 @@ LABEL_COL = "label"
 
 
 def bootstrap_by_date(df: pd.DataFrame, preds: dict[str, np.ndarray], reference: str,
-                      n_boot: int = 200, seed: int = 0) -> pd.DataFrame:
+                      n_boot: int = 200, seed: int = 0, label_col: str = LABEL_COL) -> pd.DataFrame:
     """Cluster bootstrap over prediction dates (cells on the same day are correlated).
 
     Returns mean and 95% interval of each model's ROC-AUC / PR-AUC and the paired
     difference to ``reference``.
     """
     rng = np.random.default_rng(seed)
-    y = df[LABEL_COL].to_numpy()
+    y = df[label_col].to_numpy()
     groups = list(df.groupby("date").indices.values())
     out: dict[tuple[str, str], list[float]] = {}
     for _ in range(n_boot):
@@ -136,15 +136,19 @@ def feature_group_ablation(cfg: Config, train: pd.DataFrame, test: pd.DataFrame,
                            n_iter: int) -> pd.DataFrame:
     """Re-train the boosted model with feature groups removed/isolated and score on the test years."""
     G = FEATURE_GROUPS
-    where_when = G["Location / terrain"] + G["Seasonality"]
+    where_when = G["Location / terrain / access"] + G["Seasonality"]
     history = G["Recent ignitions"] + G["Local ignition history"]
+    drop = lambda *groups: [f for f in MODEL_FEATURES if all(f not in G[g] for g in groups)]  # noqa: E731
     sets = {
         "All features": MODEL_FEATURES,
-        "Without FWI codes": [f for f in MODEL_FEATURES if f not in G["Fire Weather Index codes"]],
-        "Without ignition history": [f for f in MODEL_FEATURES if f not in history],
+        "Without neighbourhood & trend": drop("Neighbourhood & trend"),
+        "Without road density": [f for f in MODEL_FEATURES if f != "road_log"],
+        "Without FWI codes": drop("Fire Weather Index codes"),
+        "Without ignition history": drop("Recent ignitions", "Local ignition history"),
         "Location + season + history only": where_when + history,
         "Location + season only": where_when,
-        "Weather + FWI + season only": (G["Weather"] + G["Fire Weather Index codes"] + G["Seasonality"]),
+        "Weather + FWI + season only": (G["Weather"] + G["Fire Weather Index codes"]
+                                        + G["Neighbourhood & trend"] + G["Seasonality"]),
     }
     rows = {}
     for name, cols in sets.items():
@@ -152,4 +156,50 @@ def feature_group_ablation(cfg: Config, train: pd.DataFrame, test: pd.DataFrame,
         r = metrics(test[LABEL_COL].to_numpy(), m.predict_proba(test)[:, 1])
         rows[name] = {"n_features": len(cols), "roc_auc": r["roc_auc"], "pr_auc": r["pr_auc"],
                       "brier_skill": r["brier_skill"], "capture_top5": r["capture_top5"]}
+    return pd.DataFrame(rows).T
+
+
+def weekly_topk_capture(df: pd.DataFrame, preds: dict[str, np.ndarray],
+                        ks=(5, 10, 20, 30, 50, 75, 100, 150), label_col: str = LABEL_COL) -> pd.DataFrame:
+    """Operational metric: each week, watch the K highest-risk cells. What share of all
+    ignition cell-weeks falls inside those watched cells?
+
+    Ranking is done *within each week* (a dispatcher compares cells on the same day), unlike
+    the pooled top-5% capture which can be satisfied by simply flagging the peak weeks.
+    """
+    y = df[label_col].to_numpy()
+    total = max(int(y.sum()), 1)
+    groups = list(df.groupby("date").indices.values())
+    rows = {}
+    for name, p in preds.items():
+        hits = np.zeros(len(ks))
+        for idx in groups:
+            order = np.argsort(-p[idx], kind="stable")
+            ranked_y = y[idx][order]
+            cs = np.cumsum(ranked_y)
+            hits += [cs[min(k, len(cs)) - 1] for k in ks]
+        rows[name] = hits / total
+    n_cells = int(np.median([len(g) for g in groups]))
+    rows["Random"] = np.array([min(k, n_cells) / n_cells for k in ks])
+    return pd.DataFrame(rows, index=pd.Index(ks, name="cells_watched_per_week"))
+
+
+def weekly_totals(df: pd.DataFrame, p: np.ndarray, label_col: str = LABEL_COL) -> pd.DataFrame:
+    """Per prediction date: expected number of event cells (sum of probabilities) vs observed."""
+    d = pd.DataFrame({"date": df["date"].to_numpy(), "expected": p, "observed": df[label_col].to_numpy()})
+    return d.groupby("date").sum()
+
+
+def temporal_skill(df: pd.DataFrame, preds: dict[str, np.ndarray], label_col: str = LABEL_COL) -> pd.DataFrame:
+    """How well does each model track *when* events happen (weekly totals across the whole province)?
+
+    Spearman rank correlation and R^2 of expected vs observed weekly counts. Separates temporal
+    skill (which weeks are dangerous) from spatial skill (which cells within a week).
+    """
+    rows = {}
+    for name, p in preds.items():
+        t = weekly_totals(df, p, label_col)
+        r2 = 1 - ((t["observed"] - t["expected"]) ** 2).sum() / ((t["observed"] - t["observed"].mean()) ** 2).sum()
+        rows[name] = {"spearman": float(t["expected"].corr(t["observed"], method="spearman")),
+                      "pearson": float(t["expected"].corr(t["observed"])), "r2": float(r2)}
     return pd.DataFrame(rows).T

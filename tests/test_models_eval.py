@@ -42,3 +42,16 @@ def test_bootstrap_ci_contains_point_estimate():
     out = ev.bootstrap_by_date(df, {"a": score, "ref": rng.random(len(df))}, "ref", n_boot=60)
     row = out[(out.model == "a") & (out.metric == "roc_auc")].iloc[0]
     assert row.lo < row["mean"] < row.hi and row.lo > 0.5
+
+
+def test_temporal_skill_separates_week_level_from_constant_predictions():
+    rng = np.random.default_rng(0)
+    dates = pd.date_range("2022-05-01", periods=40, freq="7D")
+    intensity = rng.uniform(0.02, 0.4, len(dates))                 # weekly "danger"
+    df = pd.DataFrame({"date": np.repeat(dates, 80)})
+    df["label"] = (rng.random(len(df)) < np.repeat(intensity, 80)).astype(int)
+    tracks = np.repeat(intensity, 80)                               # knows the weekly danger
+    flat = np.full(len(df), intensity.mean())                       # climatology-like constant
+    skill = ev.temporal_skill(df, {"tracks": tracks, "flat": flat})
+    assert skill.loc["tracks", "spearman"] > 0.8 and skill.loc["tracks", "r2"] > 0.5
+    assert skill.loc["flat", "r2"] <= 0.01

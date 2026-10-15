@@ -1,95 +1,95 @@
 {
-  "best_iteration": 240,
+  "best_iteration": 502,
   "test": {
     "roc_auc": {
       "Climatology": 0.86086,
-      "Logistic regression": 0.87424,
-      "Random forest": 0.88628,
-      "Gradient boosting": 0.8868,
-      "Gradient boosting (calibrated)": 0.88633,
-      "Random forest (calibrated)": 0.88555,
-      "Logistic regression (calibrated)": 0.87368
+      "Logistic regression": 0.87755,
+      "Random forest": 0.88629,
+      "Gradient boosting": 0.88679,
+      "Gradient boosting (calibrated)": 0.88587,
+      "Random forest (calibrated)": 0.88568,
+      "Logistic regression (calibrated)": 0.87673
     },
     "pr_auc": {
       "Climatology": 0.28078,
-      "Logistic regression": 0.31337,
-      "Random forest": 0.32426,
-      "Gradient boosting": 0.32478,
-      "Gradient boosting (calibrated)": 0.3095,
-      "Random forest (calibrated)": 0.31101,
-      "Logistic regression (calibrated)": 0.30374
+      "Logistic regression": 0.31549,
+      "Random forest": 0.32417,
+      "Gradient boosting": 0.32201,
+      "Gradient boosting (calibrated)": 0.30162,
+      "Random forest (calibrated)": 0.30832,
+      "Logistic regression (calibrated)": 0.30487
     },
     "brier": {
       "Climatology": 0.04467,
-      "Logistic regression": 0.04396,
-      "Random forest": 0.04303,
-      "Gradient boosting": 0.04312,
-      "Gradient boosting (calibrated)": 0.04414,
-      "Random forest (calibrated)": 0.04408,
-      "Logistic regression (calibrated)": 0.04525
+      "Logistic regression": 0.04374,
+      "Random forest": 0.043,
+      "Gradient boosting": 0.04321,
+      "Gradient boosting (calibrated)": 0.04415,
+      "Random forest (calibrated)": 0.04403,
+      "Logistic regression (calibrated)": 0.04511
     },
     "brier_skill": {
       "Climatology": 0.14222,
-      "Logistic regression": 0.15574,
-      "Random forest": 0.17363,
-      "Gradient boosting": 0.17189,
-      "Gradient boosting (calibrated)": 0.15232,
-      "Random forest (calibrated)": 0.15349,
-      "Logistic regression (calibrated)": 0.13108
+      "Logistic regression": 0.16009,
+      "Random forest": 0.17426,
+      "Gradient boosting": 0.17027,
+      "Gradient boosting (calibrated)": 0.15216,
+      "Random forest (calibrated)": 0.15448,
+      "Logistic regression (calibrated)": 0.13375
     },
     "log_loss": {
       "Climatology": 0.16222,
-      "Logistic regression": 0.15809,
-      "Random forest": 0.1523,
-      "Gradient boosting": 0.15242,
-      "Gradient boosting (calibrated)": 0.15743,
-      "Random forest (calibrated)": 0.15759,
-      "Logistic regression (calibrated)": 0.16555
+      "Logistic regression": 0.15637,
+      "Random forest": 0.15228,
+      "Gradient boosting": 0.15278,
+      "Gradient boosting (calibrated)": 0.15794,
+      "Random forest (calibrated)": 0.15754,
+      "Logistic regression (calibrated)": 0.16449
     },
     "ece": {
       "Climatology": 0.00477,
-      "Logistic regression": 0.0058,
-      "Random forest": 0.00271,
-      "Gradient boosting": 0.00447,
-      "Gradient boosting (calibrated)": 0.01829,
-      "Random forest (calibrated)": 0.01779,
-      "Logistic regression (calibrated)": 0.02202
+      "Logistic regression": 0.00542,
+      "Random forest": 0.00257,
+      "Gradient boosting": 0.00564,
+      "Gradient boosting (calibrated)": 0.01816,
+      "Random forest (calibrated)": 0.01751,
+      "Logistic regression (calibrated)": 0.02196
     },
     "capture_top5": {
       "Climatology": 0.31129,
-      "Logistic regression": 0.3358,
-      "Random forest": 0.34702,
-      "Gradient boosting": 0.3474,
-      "Gradient boosting (calibrated)": 0.34322,
-      "Random forest (calibrated)": 0.34303,
-      "Logistic regression (calibrated)": 0.33162
+      "Logistic regression": 0.34074,
+      "Random forest": 0.34626,
+      "Gradient boosting": 0.34645,
+      "Gradient boosting (calibrated)": 0.34398,
+      "Random forest (calibrated)": 0.3436,
+      "Logistic regression (calibrated)": 0.33295
     },
     "capture_top10": {
       "Climatology": 0.49468,
-      "Logistic regression": 0.52509,
-      "Random forest": 0.53782,
-      "Gradient boosting": 0.53839,
-      "Gradient boosting (calibrated)": 0.53915,
+      "Logistic regression": 0.51881,
+      "Random forest": 0.54238,
+      "Gradient boosting": 0.53668,
+      "Gradient boosting (calibrated)": 0.53839,
       "Random forest (calibrated)": 0.53972,
-      "Logistic regression (calibrated)": 0.5249
+      "Logistic regression (calibrated)": 0.51919
     },
     "precision_top5": {
       "Climatology": 0.34311,
-      "Logistic regression": 0.37013,
-      "Random forest": 0.38249,
-      "Gradient boosting": 0.38291,
-      "Gradient boosting (calibrated)": 0.3783,
-      "Random forest (calibrated)": 0.37809,
-      "Logistic regression (calibrated)": 0.36552
+      "Logistic regression": 0.37558,
+      "Random forest": 0.38165,
+      "Gradient boosting": 0.38186,
+      "Gradient boosting (calibrated)": 0.37914,
+      "Random forest (calibrated)": 0.37872,
+      "Logistic regression (calibrated)": 0.36699
     },
     "lift_top5": {
       "Climatology": 6.22577,
-      "Logistic regression": 6.71608,
-      "Random forest": 6.94033,
-      "Gradient boosting": 6.94793,
-      "Gradient boosting (calibrated)": 6.86431,
-      "Random forest (calibrated)": 6.86051,
-      "Logistic regression (calibrated)": 6.63246
+      "Logistic regression": 6.8149,
+      "Random forest": 6.92512,
+      "Gradient boosting": 6.92892,
+      "Gradient boosting (calibrated)": 6.87951,
+      "Random forest (calibrated)": 6.87191,
+      "Logistic regression (calibrated)": 6.65906
     },
     "prevalence": {
       "Climatology": 0.05511,
@@ -113,93 +113,93 @@
   "val": {
     "roc_auc": {
       "Climatology": 0.86248,
-      "Logistic regression": 0.8763,
-      "Random forest": 0.89353,
-      "Gradient boosting": 0.89445,
-      "Gradient boosting (calibrated)": 0.89641,
-      "Random forest (calibrated)": 0.89536,
-      "Logistic regression (calibrated)": 0.87893
+      "Logistic regression": 0.87981,
+      "Random forest": 0.89291,
+      "Gradient boosting": 0.89447,
+      "Gradient boosting (calibrated)": 0.8966,
+      "Random forest (calibrated)": 0.89483,
+      "Logistic regression (calibrated)": 0.88196
     },
     "pr_auc": {
       "Climatology": 0.1662,
-      "Logistic regression": 0.19419,
-      "Random forest": 0.21328,
-      "Gradient boosting": 0.2113,
-      "Gradient boosting (calibrated)": 0.20732,
-      "Random forest (calibrated)": 0.20875,
-      "Logistic regression (calibrated)": 0.19344
+      "Logistic regression": 0.19458,
+      "Random forest": 0.21231,
+      "Gradient boosting": 0.2137,
+      "Gradient boosting (calibrated)": 0.20759,
+      "Random forest (calibrated)": 0.20733,
+      "Logistic regression (calibrated)": 0.19575
     },
     "brier": {
       "Climatology": 0.02622,
-      "Logistic regression": 0.02567,
-      "Random forest": 0.02452,
-      "Gradient boosting": 0.02462,
-      "Gradient boosting (calibrated)": 0.02351,
-      "Random forest (calibrated)": 0.0235,
-      "Logistic regression (calibrated)": 0.02386
+      "Logistic regression": 0.02547,
+      "Random forest": 0.02451,
+      "Gradient boosting": 0.02457,
+      "Gradient boosting (calibrated)": 0.0234,
+      "Random forest (calibrated)": 0.02348,
+      "Logistic regression (calibrated)": 0.02383
     },
     "brier_skill": {
       "Climatology": 0.01738,
-      "Logistic regression": 0.03809,
-      "Random forest": 0.08105,
-      "Gradient boosting": 0.07755,
-      "Gradient boosting (calibrated)": 0.11912,
-      "Random forest (calibrated)": 0.11958,
-      "Logistic regression (calibrated)": 0.10602
+      "Logistic regression": 0.04575,
+      "Random forest": 0.08141,
+      "Gradient boosting": 0.07928,
+      "Gradient boosting (calibrated)": 0.12315,
+      "Random forest (calibrated)": 0.12013,
+      "Logistic regression (calibrated)": 0.10703
     },
     "log_loss": {
       "Climatology": 0.10675,
-      "Logistic regression": 0.10176,
-      "Random forest": 0.09576,
-      "Gradient boosting": 0.09508,
-      "Gradient boosting (calibrated)": 0.091,
-      "Random forest (calibrated)": 0.0912,
-      "Logistic regression (calibrated)": 0.09472
+      "Logistic regression": 0.10058,
+      "Random forest": 0.09597,
+      "Gradient boosting": 0.09476,
+      "Gradient boosting (calibrated)": 0.0907,
+      "Random forest (calibrated)": 0.09118,
+      "Logistic regression (calibrated)": 0.09421
     },
     "ece": {
       "Climatology": 0.02391,
-      "Logistic regression": 0.01825,
-      "Random forest": 0.0152,
-      "Gradient boosting": 0.01328,
+      "Logistic regression": 0.0179,
+      "Random forest": 0.01543,
+      "Gradient boosting": 0.01284,
       "Gradient boosting (calibrated)": 0.0,
       "Random forest (calibrated)": 5e-05,
-      "Logistic regression (calibrated)": 0.00034
+      "Logistic regression (calibrated)": 0.00053
     },
     "capture_top5": {
       "Climatology": 0.3645,
-      "Logistic regression": 0.40267,
-      "Random forest": 0.4084,
-      "Gradient boosting": 0.40458,
-      "Gradient boosting (calibrated)": 0.40458,
-      "Random forest (calibrated)": 0.41126,
-      "Logistic regression (calibrated)": 0.40935
+      "Logistic regression": 0.39695,
+      "Random forest": 0.41031,
+      "Gradient boosting": 0.41508,
+      "Gradient boosting (calibrated)": 0.41794,
+      "Random forest (calibrated)": 0.41221,
+      "Logistic regression (calibrated)": 0.40076
     },
     "capture_top10": {
       "Climatology": 0.54389,
-      "Logistic regression": 0.57156,
-      "Random forest": 0.6126,
-      "Gradient boosting": 0.60878,
-      "Gradient boosting (calibrated)": 0.6126,
-      "Random forest (calibrated)": 0.61832,
-      "Logistic regression (calibrated)": 0.5792
+      "Logistic regression": 0.55821,
+      "Random forest": 0.6145,
+      "Gradient boosting": 0.62214,
+      "Gradient boosting (calibrated)": 0.625,
+      "Random forest (calibrated)": 0.625,
+      "Logistic regression (calibrated)": 0.57443
     },
     "precision_top5": {
       "Climatology": 0.2,
-      "Logistic regression": 0.22094,
-      "Random forest": 0.22408,
-      "Gradient boosting": 0.22199,
-      "Gradient boosting (calibrated)": 0.22199,
-      "Random forest (calibrated)": 0.22565,
-      "Logistic regression (calibrated)": 0.22461
+      "Logistic regression": 0.2178,
+      "Random forest": 0.22513,
+      "Gradient boosting": 0.22775,
+      "Gradient boosting (calibrated)": 0.22932,
+      "Random forest (calibrated)": 0.22618,
+      "Logistic regression (calibrated)": 0.2199
     },
     "lift_top5": {
       "Climatology": 7.28855,
-      "Logistic regression": 8.05175,
-      "Random forest": 8.16623,
-      "Gradient boosting": 8.08991,
-      "Gradient boosting (calibrated)": 8.08991,
-      "Random forest (calibrated)": 8.22347,
-      "Logistic regression (calibrated)": 8.18531
+      "Logistic regression": 7.93727,
+      "Random forest": 8.20439,
+      "Gradient boosting": 8.29979,
+      "Gradient boosting (calibrated)": 8.35703,
+      "Random forest (calibrated)": 8.24255,
+      "Logistic regression (calibrated)": 8.01359
     },
     "prevalence": {
       "Climatology": 0.02744,
@@ -262,86 +262,86 @@
       [
         "Logistic regression",
         "roc_auc",
-        0.8736232552,
-        0.8595285317,
-        0.8850785738
+        0.8770498827,
+        0.8643137929,
+        0.8881917026
       ],
       [
         "Logistic regression",
         "pr_auc",
-        0.3115748127,
-        0.2763817052,
-        0.3481737325
+        0.3137760099,
+        0.2772011663,
+        0.3524670927
       ],
       [
         "Logistic regression",
         "roc_auc - ref",
-        0.0133757055,
-        0.0048511479,
-        0.0217047236
+        0.016802333,
+        0.0098766862,
+        0.0242193054
       ],
       [
         "Logistic regression",
         "pr_auc - ref",
-        0.0325490483,
-        0.0159013475,
-        0.0467844063
+        0.0347502455,
+        0.0202776617,
+        0.0496926926
       ],
       [
         "Random forest",
         "roc_auc",
-        0.8858804457,
-        0.8741954767,
-        0.895634172
+        0.8859162744,
+        0.8738818448,
+        0.8957631368
       ],
       [
         "Random forest",
         "pr_auc",
-        0.3227231532,
-        0.2891991298,
-        0.3625122107
+        0.3227151323,
+        0.2888387041,
+        0.3627028337
       ],
       [
         "Random forest",
         "roc_auc - ref",
-        0.025632896,
-        0.0190484736,
-        0.0330876086
+        0.0256687247,
+        0.0189363267,
+        0.0333321546
       ],
       [
         "Random forest",
         "pr_auc - ref",
-        0.0436973888,
-        0.0246055484,
-        0.0599252444
+        0.0436893679,
+        0.0252220186,
+        0.0602186792
       ],
       [
         "Gradient boosting",
         "roc_auc",
-        0.8864042931,
-        0.8749434657,
-        0.8963353838
+        0.8864205053,
+        0.8753150437,
+        0.8960480626
       ],
       [
         "Gradient boosting",
         "pr_auc",
-        0.3229334517,
-        0.2878411498,
-        0.3603094028
+        0.3203177222,
+        0.2857780721,
+        0.3569275328
       ],
       [
         "Gradient boosting",
         "roc_auc - ref",
-        0.0261567434,
-        0.0196625699,
-        0.0328352575
+        0.0261729556,
+        0.0198595566,
+        0.0326279572
       ],
       [
         "Gradient boosting",
         "pr_auc - ref",
-        0.0439076873,
-        0.0214971273,
-        0.0638977942
+        0.0412919578,
+        0.0198308067,
+        0.0621719283
       ]
     ]
   },
@@ -360,23 +360,23 @@
     "data": [
       [
         0.8923170133,
-        0.9166866444
+        0.916312623
       ],
       [
         0.8452444562,
-        0.8815540248
+        0.8823583703
       ],
       [
         0.8496583757,
-        0.8592280268
+        0.8608235055
       ],
       [
         0.8741238531,
-        0.8972348665
+        0.8966218773
       ],
       [
         0.850632336,
-        0.8777956224
+        0.8758049265
       ]
     ]
   },
@@ -395,23 +395,23 @@
     "data": [
       [
         0.3233541102,
-        0.3700978817
+        0.3684277083
       ],
       [
         0.2817467795,
-        0.3240583691
+        0.3257391637
       ],
       [
         0.3063258142,
-        0.3163036891
+        0.319839194
       ],
       [
         0.2840884469,
-        0.3445538594
+        0.3362420128
       ],
       [
         0.226800724,
-        0.2700637435
+        0.2574286066
       ]
     ]
   },
@@ -439,9 +439,9 @@
       [
         0,
         "Gradient boosting",
-        0.8796821546,
-        0.384206965,
-        0.2004874094
+        0.883603315,
+        0.3903022875,
+        0.2075831866
       ],
       [
         0,
@@ -453,9 +453,9 @@
       [
         1,
         "Gradient boosting",
-        0.9058103833,
-        0.3165921989,
-        0.1770621284
+        0.9181711489,
+        0.3399039917,
+        0.1935199518
       ],
       [
         1,
@@ -467,9 +467,9 @@
       [
         2,
         "Gradient boosting",
-        0.8952472716,
-        0.2061896875,
-        0.1122036478
+        0.9112592747,
+        0.2431469148,
+        0.1376707687
       ],
       [
         2,
@@ -481,9 +481,9 @@
       [
         3,
         "Gradient boosting",
-        0.8723651727,
-        0.2490169461,
-        0.1219523849
+        0.8764455959,
+        0.2606955644,
+        0.1293094088
       ],
       [
         3,
@@ -495,9 +495,9 @@
       [
         4,
         "Gradient boosting",
-        0.8695478622,
-        0.3649062045,
-        0.1842821515
+        0.8732338009,
+        0.3788972322,
+        0.1948948165
       ],
       [
         4,
@@ -518,6 +518,8 @@
     ],
     "index": [
       "All features",
+      "Without neighbourhood & trend",
+      "Without road density",
       "Without FWI codes",
       "Without ignition history",
       "Location + season + history only",
@@ -526,46 +528,137 @@
     ],
     "data": [
       [
-        26.0,
-        0.8867977735,
-        0.3247819725,
-        0.1718860074,
-        0.3473964272
+        33.0,
+        0.8867946886,
+        0.3220143475,
+        0.1702738955,
+        0.3464462182
       ],
       [
-        20.0,
-        0.8863568213,
-        0.3225804173,
-        0.1702934227,
-        0.3451159255
+        27.0,
+        0.886228873,
+        0.3228012715,
+        0.1700235296,
+        0.342645382
       ],
       [
-        21.0,
-        0.8786202946,
-        0.3055033548,
-        0.1576023195,
-        0.3329532497
+        32.0,
+        0.8864404282,
+        0.3221953232,
+        0.1700478056,
+        0.3445458001
       ],
       [
-        10.0,
-        0.8783874892,
-        0.3131622119,
-        0.1630518871,
-        0.3392246294
+        27.0,
+        0.8868786589,
+        0.3224225255,
+        0.170603102,
+        0.3468263018
       ],
       [
-        5.0,
-        0.8704386016,
-        0.2906085013,
-        0.1476706736,
-        0.3156594451
+        28.0,
+        0.8826804703,
+        0.3073693047,
+        0.1600016353,
+        0.335613835
       ],
       [
-        18.0,
-        0.8415152928,
-        0.2270775554,
-        0.1012870724,
-        0.2597871532
+        11.0,
+        0.8768996187,
+        0.3061799442,
+        0.1568477715,
+        0.3293424553
+      ],
+      [
+        6.0,
+        0.8723644964,
+        0.2950916937,
+        0.1495769453,
+        0.3200304067
+      ],
+      [
+        24.0,
+        0.8436889373,
+        0.2267852483,
+        0.1001250574,
+        0.2605473204
+      ]
+    ]
+  },
+  "weekly_capture": {
+    "columns": [
+      "Climatology",
+      "Logistic regression",
+      "Random forest",
+      "Gradient boosting",
+      "Random"
+    ],
+    "index": [
+      5,
+      10,
+      20,
+      30,
+      50,
+      75,
+      100,
+      150
+    ],
+    "data": [
+      [
+        0.0530216648,
+        0.0579627518,
+        0.0573926264,
+        0.0543519574,
+        0.0081168831
+      ],
+      [
+        0.0938806537,
+        0.1022424933,
+        0.1001520334,
+        0.0992018244,
+        0.0162337662
+      ],
+      [
+        0.1666666667,
+        0.1757886735,
+        0.1769289244,
+        0.1738882554,
+        0.0324675325
+      ],
+      [
+        0.2385024705,
+        0.2453439757,
+        0.2445838084,
+        0.2436335994,
+        0.0487012987
+      ],
+      [
+        0.3559483086,
+        0.3612694793,
+        0.358608894,
+        0.3580387685,
+        0.0811688312
+      ],
+      [
+        0.475104523,
+        0.471113645,
+        0.475104523,
+        0.4773850247,
+        0.1217532468
+      ],
+      [
+        0.5708855948,
+        0.5598631699,
+        0.5710756366,
+        0.5748764728,
+        0.1623376623
+      ],
+      [
+        0.7042949449,
+        0.7001140251,
+        0.7155074116,
+        0.7143671608,
+        0.2435064935
       ]
     ]
   },

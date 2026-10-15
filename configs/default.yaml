@@ -39,11 +39,12 @@ model:
   seed: 42
   gradient_boosting:        # sklearn HistGradientBoostingClassifier (no native deps)
     max_iter: 1500          # upper bound; the best iteration is chosen on validation years
-    learning_rate: 0.05
-    max_leaf_nodes: 31
-    min_samples_leaf: 100
-    l2_regularization: 5.0
-    max_features: 0.8
+    # chosen by `wildfire tune` (forward-chaining CV by year, 14 random configs; see reports/tuning.json)
+    learning_rate: 0.03
+    max_leaf_nodes: 63
+    min_samples_leaf: 200
+    l2_regularization: 1.0
+    max_features: 0.5
   random_forest:
     n_estimators: 300
     max_depth: 14

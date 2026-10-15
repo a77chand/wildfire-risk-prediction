@@ -21,7 +21,8 @@ def tiny_grid(cfg) -> pd.DataFrame:
         for c in range(36, 39):
             lat, lon = spec.center(r, c)
             rows.append({"cell_id": int(spec.cell_id(r, c)), "row": r, "col": c, "lat": lat,
-                         "lon": lon, "land_frac": 1.0, "elevation": 800.0 + 100 * (r - 4)})
+                         "lon": lon, "land_frac": 1.0, "elevation": 800.0 + 100 * (r - 4),
+                         "road_log": 2.0 + (c - 36)})
     return pd.DataFrame(rows)
 
 

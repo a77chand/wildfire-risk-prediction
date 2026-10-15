@@ -6,10 +6,12 @@ import json
 import joblib
 import pandas as pd
 
+from . import evaluate as ev
 from . import explain, plots
 from . import grid as G
 from . import ignitions as I
 from .config import Config
+from .features import TARGETS
 from .maps import cell_polygons, folium_risk_map
 from .models import BOOSTED
 from .train import add_rate_features, load_dataset
@@ -28,7 +30,7 @@ def make(cfg: Config, verbose: bool = True) -> dict:
     y = preds["label"].to_numpy()
     grid = G.load_grid(cfg)
     boundary = G.fetch_boundary(cfg)
-    art = joblib.load(cfg.path("models_dir") / "boosted.joblib")
+    art = joblib.load(cfg.path("models_dir") / "boosted_label.joblib")
     out = {}
 
     raw = ["Climatology", "Logistic regression", "Random forest", BOOSTED]
@@ -40,7 +42,30 @@ def make(cfg: Config, verbose: bool = True) -> dict:
                                          figs / "per_year.png")
     out["ablation"] = plots.fig_ablation(_frame(metrics["ablation"]), figs / "ablation.png")
     out["seasonality"] = plots.fig_seasonality(preds, BOOSTED, figs / "seasonality.png")
+    cap = _frame(metrics["weekly_capture"])
+    out["weekly_capture"] = plots.fig_weekly_capture(cap, figs / "weekly_capture.png", n_cells=len(grid))
+    tj = json.load(open(cfg.path("reports_dir") / "targets.json"))
+    out["targets"] = plots.fig_targets_summary(tj["targets"], figs / "targets_summary.png")
+    if tj["drivers"]:
+        desc = {t: e["description"] for t, e in tj["targets"].items()}
+        out["target_drivers"] = plots.fig_target_drivers(
+            {t: d for t, d in tj["drivers"].items() if t != "label"}, desc, figs / "target_drivers.png")
+
+    # ---- temporal vs spatial skill: tracking which weeks are dangerous ------------------
+    tp = pd.read_parquet(cfg.path("data_dir", "processed") / "predictions_targets_test.parquet")
+    skill = {}
+    for t in TARGETS:
+        s_t = ev.temporal_skill(tp, {"Climatology": tp[f"c_{t}"].to_numpy(),
+                                     BOOSTED: tp[f"p_{t}"].to_numpy()}, label_col=t)
+        skill[t] = s_t.round(4).to_dict(orient="index")
+    json.dump(skill, open(cfg.path("reports_dir") / "temporal_skill.json", "w"), indent=2)
+    prim = ev.temporal_skill(tp, {"Climatology": tp["c_label"].to_numpy(), BOOSTED: tp["p_label"].to_numpy()})
+    out["temporal"] = plots.fig_temporal_skill(
+        {"Climatology": ev.weekly_totals(tp, tp["c_label"].to_numpy()),
+         BOOSTED: ev.weekly_totals(tp, tp["p_label"].to_numpy())}, prim, figs / "temporal_skill.png")
     if verbose:
+        print("temporal skill (Spearman / R2):", {t: {m: (round(v["spearman"], 2), round(v["r2"], 2))
+                                                   for m, v in d.items()} for t, d in skill.items()})
         print("core figures done")
 
     # ---- SHAP -------------------------------------------------------------------------

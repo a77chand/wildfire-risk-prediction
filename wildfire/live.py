@@ -6,6 +6,7 @@ following the latest available observation date, not a weather *forecast*.
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 
 import joblib
 import numpy as np
@@ -18,8 +19,10 @@ from . import weather as W
 from .config import Config
 
 
-def load_artifact(cfg: Config) -> dict:
-    return joblib.load(cfg.path("models_dir") / "boosted.joblib")
+def load_artifacts(directory: Path, pattern: str = "model_{t}.joblib") -> dict[str, dict]:
+    """Load one model artefact per target from ``directory`` (``models/`` or ``artifacts/``)."""
+    return {t: joblib.load(directory / pattern.format(t=t)) for t in F.TARGETS
+            if (directory / pattern.format(t=t)).exists()}
 
 
 def fetch_recent_weather(grid: pd.DataFrame, start: str, end: str, workers: int = 3) -> pd.DataFrame:
@@ -39,12 +42,15 @@ def fetch_recent_weather(grid: pd.DataFrame, start: str, end: str, workers: int 
     return pd.concat(frames, ignore_index=True)
 
 
-def nowcast(cfg: Config, today: pd.Timestamp | None = None, artifact: dict | None = None,
+def nowcast(cfg: Config, today: pd.Timestamp | None = None, artifacts: dict[str, dict] | None = None,
             weather: pd.DataFrame | None = None,
             grid: pd.DataFrame | None = None) -> tuple[pd.Timestamp, pd.DataFrame]:
-    """Return (observation date, per-cell frame with features and predicted risk)."""
+    """Return (observation date, per-cell frame with features and ``risk_<target>`` columns).
+
+    ``risk`` is an alias of ``risk_label`` (any ignition in the next 7 days).
+    """
     today = pd.Timestamp(today or pd.Timestamp.today()).normalize()
-    art = artifact or load_artifact(cfg)
+    artifacts = artifacts or load_artifacts(cfg.path("models_dir"), "boosted_{t}.joblib")
     grid = grid if grid is not None else G.load_grid(cfg)
     if weather is None:
         cache = cfg.ensure("data_dir", "live") / f"weather_{today:%Y-%m-%d}.parquet"
@@ -65,9 +71,13 @@ def nowcast(cfg: Config, today: pd.Timestamp | None = None, artifact: dict | Non
                        cfg["label"]["fire_types"], cfg["label"]["min_size_ha"])
     dates, arrays, _, _ = F.daily_arrays(cfg, grid, weather, ign)
     rows = F.feature_rows(grid, dates, arrays, np.array([len(dates) - 1]))
-    rows = art["encoder"].transform(rows)
-    rows["risk"] = art["model"].predict_proba(rows)[:, 1]
-    rows.loc[rows["tmax"].isna(), "risk"] = np.nan   # no weather for this cell -> no estimate
+    for target, art in artifacts.items():
+        scored = art["encoder"].transform(rows)
+        risk = art["model"].predict_proba(scored)[:, 1]
+        rows[f"risk_{target}"] = np.where(rows["tmax"].isna(), np.nan, risk)  # no weather -> no estimate
+        rows[f"rate_cell_{target}"] = scored["rate_cell"]
+    if "risk_label" in rows:
+        rows["risk"] = rows["risk_label"]
     in_season = cfg["season"]["start_month"] <= last.month <= cfg["season"]["end_month"]
     rows["in_season"] = bool(in_season)
     return last, rows

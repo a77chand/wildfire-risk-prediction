@@ -9,8 +9,22 @@ import pandas as pd
 
 from . import evaluate as ev
 from .config import Config
-from .features import LABEL, MODEL_FEATURES, LocalRateEncoder, assign_split
-from .models import BOOSTED, Calibrated, build_models
+from .features import (
+    CONTEXT_FEATURES,
+    LABEL,
+    MODEL_FEATURES,
+    TARGETS,
+    LocalRateEncoder,
+    assign_split,
+)
+from .models import (
+    BOOSTED,
+    BoostedModel,
+    Calibrated,
+    ClimatologyBaseline,
+    boosted_fixed,
+    build_models,
+)
 
 
 def load_dataset(cfg: Config) -> pd.DataFrame:
@@ -19,9 +33,9 @@ def load_dataset(cfg: Config) -> pd.DataFrame:
     return df
 
 
-def add_rate_features(df: pd.DataFrame) -> tuple[pd.DataFrame, LocalRateEncoder]:
-    """Fit the local-history encoder on training years and apply it to every row."""
-    enc = LocalRateEncoder().fit(df[df.split == "train"])
+def add_rate_features(df: pd.DataFrame, target: str = LABEL) -> tuple[pd.DataFrame, LocalRateEncoder]:
+    """Fit the local-history encoder (for ``target``) on training years and apply it to every row."""
+    enc = LocalRateEncoder(label_col=target).fit(df[df.split == "train"])
     return enc.transform(df), enc
 
 
@@ -59,6 +73,12 @@ def run(cfg: Config, quick: bool = False, verbose: bool = True) -> dict:
         print("\nTEST metrics\n", tab_te.loc[shown, ["roc_auc", "pr_auc", "brier_skill", "ece",
                                                      "capture_top5", "lift_top5"]].round(3))
 
+    cap_models = ["Climatology", "Logistic regression", "Random forest", BOOSTED]
+    result["weekly_capture"] = ev.weekly_topk_capture(te, {n: pred_te[n] for n in cap_models})
+    if verbose:
+        print("\nShare of ignition cell-weeks inside the K cells watched each week\n",
+              result["weekly_capture"].round(3))
+
     if not quick:
         boot_models = ["Climatology", "Logistic regression", "Random forest", BOOSTED]
         result["bootstrap"] = ev.bootstrap_by_date(
@@ -77,7 +97,7 @@ def run(cfg: Config, quick: bool = False, verbose: bool = True) -> dict:
     models_dir = cfg.ensure("models_dir")
     joblib.dump({"model": boosted, "calibrator": calibrated[f"{BOOSTED} (calibrated)"].iso,
                  "features": MODEL_FEATURES, "encoder": encoder,
-                 "best_iteration": best_iter}, models_dir / "boosted.joblib")
+                 "best_iteration": best_iter}, models_dir / "boosted_label.joblib")
     for n in ("Climatology", "Logistic regression", "Random forest"):
         joblib.dump(models[n], models_dir / f"{n.lower().replace(' ', '_')}.joblib")
 
@@ -92,8 +112,8 @@ def run(cfg: Config, quick: bool = False, verbose: bool = True) -> dict:
 
     out = {k: (v.round(5).to_dict() if isinstance(v, pd.DataFrame) else v)
            for k, v in result.items() if k not in ("bootstrap", "per_year_auc", "per_year_pr",
-                                                   "spatial_cv", "ablation")}
-    for k in ("bootstrap", "per_year_auc", "per_year_pr", "spatial_cv", "ablation"):
+                                                   "spatial_cv", "ablation", "weekly_capture")}
+    for k in ("bootstrap", "per_year_auc", "per_year_pr", "spatial_cv", "ablation", "weekly_capture"):
         if k in result:
             out[k] = json.loads(result[k].to_json(orient="split"))
     out["split"] = {"train_years": [int(tr.year.min()), int(tr.year.max())],
@@ -102,7 +122,67 @@ def run(cfg: Config, quick: bool = False, verbose: bool = True) -> dict:
                     "rows": {"train": len(tr), "val": len(va), "test": len(te)}}
     with open(cfg.ensure("reports_dir") / "metrics.json", "w") as fh:
         json.dump(out, fh, indent=2, default=float)
+    result["targets"] = run_targets(cfg, quick=quick, verbose=verbose)
     result["data"] = {"train": tr, "val": va, "test": te}
     result["preds_test"] = preds
     result["models"] = all_models
     return result
+
+
+def run_targets(cfg: Config, quick: bool = False, verbose: bool = True) -> dict:
+    """Train a climatology baseline and a boosted model for every target.
+
+    Targets: any ignition, large fire, lightning-caused, person-caused. Each gets its own
+    local-history rates (a lightning-prone cell is not necessarily a person-caused-prone one),
+    its own validation-year iteration count, held-out metrics, SHAP drivers and model file.
+    """
+    from . import explain
+
+    base = load_dataset(cfg)
+    models_dir = cfg.ensure("models_dir")
+    summary, drivers, pred_cols = {}, {}, {}
+    for target, desc in TARGETS.items():
+        df, enc = add_rate_features(base, target)
+        tr, va, te = (df[df.split == s].reset_index(drop=True) for s in ("train", "val", "test"))
+        clim = ClimatologyBaseline().fit(tr, tr[target])
+        bm = BoostedModel(cfg["model"]["gradient_boosting"], cfg.seed,
+                          val=(va, va[target].to_numpy())).fit(tr, tr[target])
+        p_clim, p_boost = clim.predict_proba(te)[:, 1], bm.predict_proba(te)[:, 1]
+        y = te[target].to_numpy()
+        tab = ev.metrics_table(y, {"Climatology": p_clim, BOOSTED: p_boost})
+        entry = {"description": desc, "best_iteration": int(bm.best_iteration_),
+                 "test": tab.round(5).to_dict(),
+                 "weekly_capture": ev.weekly_topk_capture(
+                     te, {"Climatology": p_clim, BOOSTED: p_boost}, ks=(10, 30, 50),
+                     label_col=target).round(5).to_dict()}
+        if not quick:
+            boot = ev.bootstrap_by_date(te, {"Climatology": p_clim, BOOSTED: p_boost},
+                                        reference="Climatology", n_boot=150, label_col=target)
+            entry["bootstrap"] = json.loads(boot.to_json(orient="records"))
+            # controlled comparison: do road density + neighbourhood/trend features help this target?
+            old_cols = [f for f in MODEL_FEATURES if f not in CONTEXT_FEATURES + ["road_log"]]
+            p_old = boosted_fixed(cfg, int(bm.best_iteration_), features=old_cols).fit(
+                tr, tr[target]).predict_proba(te)[:, 1]
+            entry["new_features"] = {
+                name: {k: v for k, v in ev.metrics(y, p).items() if k in ("roc_auc", "pr_auc", "log_loss")}
+                for name, p in (("without", p_old), ("with", p_boost))}
+            sv = explain.shap_values(bm, tr, te.sample(min(500, len(te)), random_state=0))
+            imp = pd.Series(np.abs(sv.values).mean(0), index=sv.feature_names).sort_values(ascending=False)
+            drivers[target] = imp.head(12).round(5).to_dict()
+        summary[target] = entry
+        pred_cols[f"p_{target}"], pred_cols[f"c_{target}"] = p_boost.astype(np.float32), p_clim.astype(np.float32)
+        joblib.dump({"model": bm, "encoder": enc, "features": MODEL_FEATURES,
+                     "best_iteration": int(bm.best_iteration_), "target": target},
+                    models_dir / f"boosted_{target}.joblib")
+        if verbose:
+            t = tab.loc[:, ["roc_auc", "pr_auc", "brier_skill", "capture_top5"]].round(3)
+            print(f"\n[{target}] {desc}  (test prevalence {y.mean():.2%})\n{t}")
+
+    preds = te[["cell_id", "date", "n_next", *TARGETS]].copy()
+    for k, v in pred_cols.items():
+        preds[k] = v
+    preds.to_parquet(cfg.ensure("data_dir", "processed") / "predictions_targets_test.parquet")
+    out = {"targets": summary, "drivers": drivers}
+    with open(cfg.ensure("reports_dir") / "targets.json", "w") as fh:
+        json.dump(out, fh, indent=2, default=float)
+    return out

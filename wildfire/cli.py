@@ -5,6 +5,7 @@ import argparse
 
 from . import features as F
 from . import grid as G
+from . import human
 from . import ignitions as I
 from . import report as R
 from . import train as T
@@ -18,7 +19,8 @@ def cmd_fetch(cfg):
     ign = I.load_ignitions(cfg)
     print(f"ignitions: {len(ign):,} ({ign['date'].min():%Y-%m-%d} .. {ign['date'].max():%Y-%m-%d})")
     W.fetch_weather(cfg, grid)
-    W.attach_elevation(cfg, grid, W.load_weather(cfg, grid))
+    grid = W.attach_elevation(cfg, grid, W.load_weather(cfg, grid))
+    human.attach_roads(cfg, grid)
 
 
 def cmd_build(cfg):
@@ -36,8 +38,9 @@ def cmd_live(cfg, out=None):
     last, rows = nowcast(cfg)
     grid = G.load_grid(cfg)
     print(f"observations through {last:%Y-%m-%d}; in season: {bool(rows['in_season'].iloc[0])}")
-    print(rows.nlargest(10, "risk")[["cell_id", "risk", "fwi", "dc", "tmax", "precip_30d"]]
-          .merge(grid[["cell_id", "lat", "lon"]], on="cell_id").round(3).to_string(index=False))
+    cols = ["cell_id", "lat", "lon", "risk_label", "risk_label_large", "risk_label_lightning", "risk_label_person", "fwi", "dc"]
+    cols = [c for c in cols if c in rows.columns]
+    print(rows.nlargest(10, "risk")[cols].round(3).to_string(index=False))
     if out:
         cells = cell_polygons(grid, cfg.cell_deg).merge(rows[["cell_id", "risk"]], on="cell_id")
         folium_risk_map(cells, G.fetch_boundary(cfg), "risk", f"Risk, 7 days after {last:%d %b %Y}"
@@ -47,7 +50,7 @@ def cmd_live(cfg, out=None):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="wildfire", description=__doc__)
-    ap.add_argument("command", choices=["fetch", "build", "train", "report", "export", "live", "all"])
+    ap.add_argument("command", choices=["fetch", "build", "tune", "train", "report", "export", "live", "all"])
     ap.add_argument("--config", default=None)
     ap.add_argument("--quick", action="store_true", help="skip bootstrap / spatial CV / ablation")
     ap.add_argument("--out", default=None, help="live: write an HTML map here")
@@ -57,6 +60,10 @@ def main(argv=None):
         cmd_fetch(cfg)
     if a.command in ("build", "all"):
         cmd_build(cfg)
+    if a.command == "tune":
+        from . import tune
+
+        print(tune.run(cfg).head(5).to_string())
     if a.command in ("train", "all"):
         T.run(cfg, quick=a.quick)
     if a.command in ("report", "all"):
