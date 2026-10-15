@@ -1,0 +1,58 @@
+# Everything that defines the experiment lives here, so a run is reproducible
+# from this file + the pinned data pulls.
+
+region:
+  name: British Columbia
+  bbox: [-139.1, 48.3, -114.0, 60.0]   # west, south, east, north
+
+grid:
+  cell_deg: 0.5            # ~55 km N-S, ~30-35 km E-W at BC latitudes
+  min_land_fraction: 0.30  # keep cells whose area is at least this much inside BC
+
+years:
+  start: 2005
+  end: 2025
+
+season:                     # prediction dates are restricted to this window
+  start_month: 4
+  end_month: 10
+
+label:
+  source: bcws              # bcws (agency incident records) | firms (satellite detections)
+  horizon_days: 7           # target = any ignition in the cell in the next 7 days
+  fire_types: [Fire]        # drops nuisance fires, duplicates, smoke chases
+  min_size_ha: 0.0
+
+sampling:
+  stride_days: 7            # one prediction date per week -> non-overlapping labels
+
+splits:                     # strictly chronological
+  train_end: 2018           # train: start..2018
+  val_end: 2020             # validation / calibration: 2019..2020 ; test: 2021..end
+
+fwi:
+  start_month: 3            # FWI System start-up (after snow melt) each year
+  start_day: 1
+  init: {ffmc: 85.0, dmc: 6.0, dc: 15.0}
+
+model:
+  seed: 42
+  gradient_boosting:        # sklearn HistGradientBoostingClassifier (no native deps)
+    max_iter: 1500          # upper bound; the best iteration is chosen on validation years
+    learning_rate: 0.05
+    max_leaf_nodes: 31
+    min_samples_leaf: 100
+    l2_regularization: 5.0
+    max_features: 0.8
+  random_forest:
+    n_estimators: 300
+    max_depth: 14
+    min_samples_leaf: 20
+  spatial_cv:
+    block_deg: 2.0
+    n_splits: 5
+
+paths:
+  data_dir: data
+  reports_dir: reports
+  models_dir: models
