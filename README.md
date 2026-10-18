@@ -1,5 +1,7 @@
 # Wildfire Ignition Risk for British Columbia
 
+**▶ [Live demo](https://a77chand.github.io/wildfire-risk-prediction/)**: a week-by-week risk map, a crew-allocation game, the 2026 forward test and a live nowcast.
+
 Weekly, grid-cell wildfire **ignition risk** for British Columbia, built from open weather data, the Canadian Fire Weather Index (FWI) System, road access and 20 years of agency ignition records. Four targets (any ignition, large fire, lightning-caused, person-caused), evaluated the way they would actually be used: on **future years the model never saw**, against a **strong climatology baseline**, with an honest account of what the model does and does not add.
 
 ![Risk map for the busiest held-out week](reports/figures/risk_map_peak_week.png)
@@ -104,7 +106,7 @@ The first version of this repo trained a Random Forest on **synthetic data whose
 | No baseline | Climatology baseline, logistic regression, random forest, gradient boosting |
 | ROC-AUC alone flatters a 5% positive rate | PR-AUC, Brier skill, calibration (ECE), top-k capture, **within-week** capture and temporal skill |
 | Preprocessing fitted on all data | Local-history features fitted on training years only, leave-one-year-out for training rows, target-specific |
-| No tests | 26 tests, including that **features at date *t* cannot see anything after *t*** and that labels cover only days *t+1…t+7* |
+| No tests | 29 tests, including that **features at date *t* cannot see anything after *t*** and that labels cover only days *t+1…t+7* |
 
 ## Data
 
