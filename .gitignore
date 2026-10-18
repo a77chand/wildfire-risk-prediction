@@ -1,5 +1,6 @@
 # Data pulled by `wildfire fetch` / built by `wildfire build` (reproducible, large)
 data/
+!web/data/
 models/
 *.csv
 

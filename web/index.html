@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BC Wildfire Risk</title>
+  <meta name="description" content="Weekly wildfire ignition risk for British Columbia: this week's nowcast, and every held-out week since 2021 checked against the fires that actually started.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='3' fill='%23c4491b'/><path d='M8 3c1 2.2 3.4 3.4 3.4 6.2A3.4 3.4 0 0 1 4.6 9.2C4.6 7.4 6 6.6 6.4 5c.9.8 1.2 1.8 1.1 2.7C8.3 6.6 8.4 4.8 8 3z' fill='%23fff1e6'/></svg>">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <div>
+      <h1>Wildfire ignition risk in British Columbia</h1>
+      <p class="lede">The chance that each ~50&nbsp;km grid cell sees a wildfire start in the next 7&nbsp;days, from weather, the Canadian Fire Weather Index and 20&nbsp;years of ignition records. Step back through every week since 2021, none of which the model was trained on, and compare it with the fires that actually started.</p>
+    </div>
+    <nav class="links">
+      <a href="https://github.com/a77chand/wildfire-risk-prediction">Code &amp; results</a>
+      <a href="https://github.com/a77chand/wildfire-risk-prediction/blob/main/docs/MODEL_CARD.md">Model card</a>
+    </nav>
+  </header>
+
+  <div class="controls" role="group" aria-label="Map options">
+    <div class="seg" id="target" role="radiogroup" aria-label="What to predict"></div>
+    <div class="seg" id="source" role="radiogroup" aria-label="Colour the map by">
+      <button role="radio" data-v="model" aria-checked="true">Model</button>
+      <button role="radio" data-v="clim" aria-checked="false">Normal for the month</button>
+    </div>
+  </div>
+
+  <main class="layout">
+    <section class="map-wrap" aria-label="Map">
+      <div id="map"></div>
+      <div class="legend" id="legend"></div>
+    </section>
+
+    <aside class="panel">
+      <div class="week-head">
+        <span class="badge" id="badge"></span>
+        <h2 id="week-title">Loading…</h2>
+        <p class="sub" id="week-sub"></p>
+        <div class="step">
+          <button id="prev" aria-label="Previous week">← Prev</button>
+          <button id="next" aria-label="Next week">Next →</button>
+          <button id="latest">Latest</button>
+        </div>
+      </div>
+
+      <div class="tiles">
+        <div class="tile"><span class="k">Model expects</span><span class="v" id="t-model">–</span><span class="u">cells with a fire</span></div>
+        <div class="tile"><span class="k">Normal for <span id="t-month">the month</span></span><span class="v" id="t-clim">–</span><span class="u">cells</span></div>
+        <div class="tile"><span class="k" id="t-actual-k">Actually had one</span><span class="v" id="t-actual">–</span><span class="u" id="t-actual-u">cells</span></div>
+      </div>
+
+      <div class="crew">
+        <h3>If crews could watch only <output id="k-out">30</output> cells</h3>
+        <input type="range" id="k" min="5" max="150" step="5" value="30" aria-label="Cells watched this week">
+        <div id="crew-result"></div>
+        <p class="fine" id="crew-all"></p>
+      </div>
+
+      <div class="cell" id="cell-info"><p class="fine">Click a cell on the map for its numbers.</p></div>
+    </aside>
+  </main>
+
+  <section class="timeline" aria-label="Week by week">
+    <div class="tl-head">
+      <h2>Week by week: expected vs. what happened</h2>
+      <div class="tl-legend">
+        <span><i class="sw bar"></i>Cells that had a fire</span>
+        <span><i class="sw line model"></i>Model expected</span>
+        <span><i class="sw line clim"></i>Normal (climatology)</span>
+      </div>
+    </div>
+    <div class="chart" id="chart"><div class="tip" id="tip" hidden></div></div>
+    <p class="fine">Click any week to load it on the map. Expected counts are the sum of every cell's probability. Gaps are winters: the model only covers April to October.</p>
+  </section>
+
+  <section class="notes">
+    <div>
+      <h2>How well does it work?</h2>
+      <div class="table-wrap"><table id="scores"></table></div>
+      <p class="fine">ROC-AUC: how well risk separates cell-weeks with and without a fire (0.5 = coin flip). Timing: rank correlation between expected and actual weekly totals across the province. Climatology is the historical rate for that cell and month, a deliberately strong baseline.</p>
+    </div>
+    <div>
+      <h2>Reading it honestly</h2>
+      <ul>
+        <li><strong>It is best at <em>when</em>.</strong> The model tracks which weeks will be busy far better than the historical average does.</li>
+        <li><strong>It is not much better at <em>where</em>, within a week.</strong> Watching the model's top cells covers about the same share of fires as watching the historically busiest cells. The crew slider shows this for any week.</li>
+        <li><strong>2026 is a true forward test.</strong> The model was trained on 2005–2018 and frozen before the 2026 season started. Each 2026 week is scored with only the data available that day; fire records are as they stand now.</li>
+        <li>Weather is NASA reanalysis at ~50&nbsp;km and runs about 3 days behind, so "this week" is a nowcast, not a forecast. Lightning strikes and fuel condition are not inputs.</li>
+      </ul>
+      <p class="warn">A research project, not a warning system. For real conditions use <a href="https://www2.gov.bc.ca/gov/content/safety/wildfire-status">BC Wildfire Service</a>.</p>
+    </div>
+  </section>
+
+  <footer>
+    <p>Fire records: BC Wildfire Service, Open Government Licence – BC. Weather: NASA POWER (MERRA-2). Boundary: BC Data Catalogue. <span id="updated"></span></p>
+  </footer>
+
+  <noscript><p class="warn">This page needs JavaScript for the map.</p></noscript>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="app.js"></script>
+</body>
+</html>

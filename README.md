@@ -135,6 +135,17 @@ Equivalent CLI: `python -m wildfire.cli {fetch,build,tune,train,report,export,li
 
 The Streamlit app and the committed `artifacts/` bundle (≈7 MB) run from a fresh clone without re-downloading data. The notebook [notebooks/walkthrough.ipynb](notebooks/walkthrough.ipynb) walks through the results, and [docs/MODEL_CARD.md](docs/MODEL_CARD.md) summarises intended use and limitations.
 
+### Live demo (static web page)
+
+[`web/`](web/) is a dependency-free page (Leaflet + vanilla JS, no server, no API keys, light/dark, works on a phone) that answers the question a reviewer actually has: *does it work, and where does it not?*
+
+- **Map of any week** since 2021, per target, model vs. "normal for the month", with the fires that really started drawn on top.
+- **Crew-allocation slider**: outline the K cells you would watch and see how many of that week's fire cells they cover, for the model, the climatology baseline and a random pick. Pooled over all 155 test weeks it reproduces the table above, so the page shows the same weak spot rather than hiding it.
+- **Current season as a forward test.** The models were frozen before 2026, so each 2026 week is scored with only that day's data and the page reports the running 2026 AUC next to the 2021-25 one. The latest column is the live nowcast with each cell's Fire Weather Index, Drought Code and weather.
+- Fire records for the season in progress come from the BCWS *current* fire-points layer. The historical layer only gains a fire year once it closes, so the nowcast previously saw none of this year's fires.
+
+`python -m wildfire.cli site` rebuilds `web/data/` (add `--backtest` after retraining); [`.github/workflows/site.yml`](.github/workflows/site.yml) does it every Monday and deploys to GitHub Pages. Preview locally with `python -m http.server -d web`.
+
 ### Interactive app
 
 - **Back-test explorer**: pick a target, slide through any held-out week, compare the model to climatology against what actually ignited, and play the **crew-allocation game** (how many events do you cover if you can only watch K cells?).
@@ -159,6 +170,7 @@ wildfire/            package
   live.py            nowcast
   cli.py             command line
 app/streamlit_app.py interactive explorer
+web/                 static demo page + data/ (built by `wildfire.cli site`)
 configs/             experiment configuration
 tests/               pytest suite
 artifacts/           committed, app-ready models + grid + test predictions

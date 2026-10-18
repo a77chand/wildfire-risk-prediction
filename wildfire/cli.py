@@ -1,4 +1,4 @@
-"""Command line: ``wildfire fetch | build | train | report | live | all``."""
+"""Command line: ``wildfire fetch | build | train | report | live | site | all``."""
 from __future__ import annotations
 
 import argparse
@@ -50,10 +50,12 @@ def cmd_live(cfg, out=None):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="wildfire", description=__doc__)
-    ap.add_argument("command", choices=["fetch", "build", "tune", "train", "report", "export", "live", "all"])
+    ap.add_argument("command", choices=["fetch", "build", "tune", "train", "report", "export", "live", "site", "all"])
     ap.add_argument("--config", default=None)
     ap.add_argument("--quick", action="store_true", help="skip bootstrap / spatial CV / ablation")
     ap.add_argument("--out", default=None, help="live: write an HTML map here")
+    ap.add_argument("--backtest", action="store_true", help="site: also rebuild the held-out-years data")
+    ap.add_argument("--today", default=None, help="site: pretend today is YYYY-MM-DD (reuses cached weather)")
     a = ap.parse_args(argv)
     cfg = load_config(a.config)
     if a.command in ("fetch", "all"):
@@ -75,6 +77,11 @@ def main(argv=None):
             print(f"artifacts/{name}: {size / 1e3:.0f} kB")
     if a.command == "live":
         cmd_live(cfg, a.out)
+    if a.command == "site":
+        from . import site
+
+        for name, size in site.make(cfg, a.backtest, a.today).items():
+            print(f"web/data/{name}: {size / 1e3:.0f} kB")
 
 
 if __name__ == "__main__":

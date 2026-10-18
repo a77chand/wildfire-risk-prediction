@@ -42,16 +42,10 @@ def fetch_recent_weather(grid: pd.DataFrame, start: str, end: str, workers: int 
     return pd.concat(frames, ignore_index=True)
 
 
-def nowcast(cfg: Config, today: pd.Timestamp | None = None, artifacts: dict[str, dict] | None = None,
-            weather: pd.DataFrame | None = None,
-            grid: pd.DataFrame | None = None) -> tuple[pd.Timestamp, pd.DataFrame]:
-    """Return (observation date, per-cell frame with features and ``risk_<target>`` columns).
-
-    ``risk`` is an alias of ``risk_label`` (any ignition in the next 7 days).
-    """
-    today = pd.Timestamp(today or pd.Timestamp.today()).normalize()
-    artifacts = artifacts or load_artifacts(cfg.path("models_dir"), "boosted_{t}.joblib")
-    grid = grid if grid is not None else G.load_grid(cfg)
+def recent_inputs(cfg: Config, today: pd.Timestamp, grid: pd.DataFrame,
+                  weather: pd.DataFrame | None = None, ign: pd.DataFrame | None = None):
+    """This year's weather (cached per day) and ignition records, cut at the latest day for
+    which (almost) every cell has weather. Returns (last observation date, weather, ignitions)."""
     if weather is None:
         cache = cfg.ensure("data_dir", "live") / f"weather_{today:%Y-%m-%d}.parquet"
         if cache.exists():
@@ -61,23 +55,64 @@ def nowcast(cfg: Config, today: pd.Timestamp | None = None, artifacts: dict[str,
             weather = fetch_recent_weather(grid, start, today.strftime("%Y-%m-%d"))
             if weather["cell_id"].nunique() >= 0.95 * len(grid):
                 weather.to_parquet(cache)
-
-    # latest day for which (almost) every cell has data
     have = weather.dropna(subset=["tmax", "tdew", "precip", "wind_ms"]).groupby("date")["cell_id"].nunique()
     last = have[have >= 0.95 * len(grid)].index.max()
     weather = weather[weather["date"] <= last]
+    if ign is None:
+        ign = I.clean_bcws(I.fetch_recent(cfg, year_from=today.year - 1),
+                           cfg["label"]["fire_types"], cfg["label"]["min_size_ha"])
+    return last, weather, ign
 
-    ign = I.clean_bcws(I.fetch_bcws(cfg, year_from=today.year - 1, force=True),
-                       cfg["label"]["fire_types"], cfg["label"]["min_size_ha"])
-    dates, arrays, _, _ = F.daily_arrays(cfg, grid, weather, ign)
-    rows = F.feature_rows(grid, dates, arrays, np.array([len(dates) - 1]))
+
+def score(rows: pd.DataFrame, artifacts: dict[str, dict]) -> pd.DataFrame:
+    """Add ``risk_<target>`` (and the cell's history rate) for every target; no weather -> NaN."""
     for target, art in artifacts.items():
         scored = art["encoder"].transform(rows)
-        risk = art["model"].predict_proba(scored)[:, 1]
-        rows[f"risk_{target}"] = np.where(rows["tmax"].isna(), np.nan, risk)  # no weather -> no estimate
+        risk = art["model"].predict_proba(scored[art["features"]])[:, 1]
+        rows[f"risk_{target}"] = np.where(rows["tmax"].isna(), np.nan, risk)
         rows[f"rate_cell_{target}"] = scored["rate_cell"]
+    return rows
+
+
+def _defaults(cfg, today, artifacts, grid):
+    today = pd.Timestamp(today or pd.Timestamp.today()).normalize()
+    artifacts = artifacts or load_artifacts(cfg.path("models_dir"), "boosted_{t}.joblib")
+    grid = grid if grid is not None else G.load_grid(cfg)
+    return today, artifacts, grid
+
+
+def nowcast(cfg: Config, today: pd.Timestamp | None = None, artifacts: dict[str, dict] | None = None,
+            weather: pd.DataFrame | None = None,
+            grid: pd.DataFrame | None = None) -> tuple[pd.Timestamp, pd.DataFrame]:
+    """Return (observation date, per-cell frame with features and ``risk_<target>`` columns).
+
+    ``risk`` is an alias of ``risk_label`` (any ignition in the next 7 days).
+    """
+    today, artifacts, grid = _defaults(cfg, today, artifacts, grid)
+    last, weather, ign = recent_inputs(cfg, today, grid, weather)
+    dates, arrays, _, _ = F.daily_arrays(cfg, grid, weather, ign)
+    rows = score(F.feature_rows(grid, dates, arrays, np.array([len(dates) - 1])), artifacts)
     if "risk_label" in rows:
         rows["risk"] = rows["risk_label"]
     in_season = cfg["season"]["start_month"] <= last.month <= cfg["season"]["end_month"]
     rows["in_season"] = bool(in_season)
     return last, rows
+
+
+def season_to_date(cfg: Config, today: pd.Timestamp | None = None,
+                   artifacts: dict[str, dict] | None = None, weather: pd.DataFrame | None = None,
+                   grid: pd.DataFrame | None = None,
+                   ign: pd.DataFrame | None = None) -> tuple[pd.Timestamp, pd.DataFrame]:
+    """Replay the current season: every weekly prediction date whose 7-day window has closed,
+    scored with the same features the model would have had that day and labelled with what
+    then ignited, plus the live nowcast row at the latest observation date (``complete`` False,
+    labels missing). These dates are after the model was built, so this is a forward test.
+    """
+    today, artifacts, grid = _defaults(cfg, today, artifacts, grid)
+    last, weather, ign = recent_inputs(cfg, today, grid, weather, ign)
+    dates, arrays, counts, _ = F.daily_arrays(cfg, grid, weather, ign)
+    idx = F.sample_dates(cfg, dates, with_label=True)
+    weeks = F.make_rows(grid, dates, arrays, counts, idx, cfg.horizon).assign(complete=True)
+    now = F.feature_rows(grid, dates, arrays, np.array([len(dates) - 1])).assign(complete=False)
+    rows = pd.concat([weeks, now], ignore_index=True) if len(weeks) else now
+    return last, score(rows, artifacts)

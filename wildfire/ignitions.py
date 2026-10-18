@@ -6,6 +6,7 @@ wildfires, open data, no API key). Optional: NASA FIRMS satellite hotspots.
 from __future__ import annotations
 
 import io
+import time
 
 import pandas as pd
 import requests
@@ -14,44 +15,90 @@ from .config import Config
 from .grid import WFS
 
 BCWS_LAYER = "pub:WHSE_LAND_AND_NATURAL_RESOURCE.PROT_HISTORICAL_INCIDENTS_SP"
+# The historical layer only gains a fire year once it has closed (fire years run Apr-Mar);
+# the season in progress lives in a separate "current fire points" layer with the same fields.
+BCWS_CURRENT_LAYER = "pub:WHSE_LAND_AND_NATURAL_RESOURCE.PROT_CURRENT_FIRE_PNTS_SP"
+PROPS = "FIRE_YEAR,IGNITION_DATE,FIRE_CAUSE,FIRE_TYPE,CURRENT_SIZE,LATITUDE,LONGITUDE,OBJECTID"
 PAGE = 10_000
 
 
-def fetch_bcws(cfg: Config, year_from: int | None = None, force: bool = False) -> pd.DataFrame:
-    """Page through the BCWS WFS (server caps a response at 10k features)."""
-    year_from = year_from or cfg["years"]["start"]
-    out = cfg.ensure("data_dir", "raw") / f"bcws_incidents_{year_from}.parquet"
-    if out.exists() and not force:
-        return pd.read_parquet(out)
+def _get(params: dict, retries: int = 5) -> dict:
+    """The WFS intermittently answers 400/5xx when its database pool is busy; back off and retry."""
+    for attempt in range(retries):
+        try:
+            r = requests.get(WFS, params=params, timeout=180)
+            r.raise_for_status()
+            return r.json()
+        except (requests.RequestException, ValueError):
+            if attempt == retries - 1:
+                raise
+            time.sleep(5 * 2 ** attempt)
+    raise AssertionError("unreachable")
 
-    props = "FIRE_YEAR,IGNITION_DATE,FIRE_CAUSE,FIRE_TYPE,CURRENT_SIZE,LATITUDE,LONGITUDE,OBJECTID"
+
+def _fetch_layer(layer: str, props: str, cql: str | None = None) -> pd.DataFrame:
+    """Page through a BCWS WFS layer (server caps a response at 10k features)."""
     frames, start = [], 0
     while True:
-        r = requests.get(
-            WFS,
-            params={
-                "service": "WFS", "version": "2.0.0", "request": "GetFeature",
-                "typeNames": BCWS_LAYER, "outputFormat": "application/json",
-                "cql_filter": f"FIRE_YEAR>={year_from}", "propertyName": props,
-                "sortBy": "OBJECTID", "startIndex": start, "count": PAGE,
-            },
-            timeout=180,
-        )
-        r.raise_for_status()
-        feats = r.json()["features"]
+        params = {
+            "service": "WFS", "version": "2.0.0", "request": "GetFeature",
+            "typeNames": layer, "outputFormat": "application/json", "propertyName": props,
+            "sortBy": "OBJECTID", "startIndex": start, "count": PAGE,
+        }
+        if cql:
+            params["cql_filter"] = cql
+        feats = _get(params)["features"]
         if not feats:
             break
         frames.append(pd.DataFrame([f["properties"] for f in feats]))
         if len(feats) < PAGE:
             break
         start += PAGE
-    df = pd.concat(frames, ignore_index=True)
+    return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame(columns=props.split(","))
+
+
+def fetch_bcws(cfg: Config, year_from: int | None = None, force: bool = False) -> pd.DataFrame:
+    """Historical (closed) fire years from ``year_from`` on, cached under ``data/raw``."""
+    year_from = year_from or cfg["years"]["start"]
+    out = cfg.ensure("data_dir", "raw") / f"bcws_incidents_{year_from}.parquet"
+    if out.exists() and not force:
+        return pd.read_parquet(out)
+    df = _fetch_layer(BCWS_LAYER, PROPS, f"FIRE_YEAR>={year_from}")
     df.to_parquet(out)
     return df
 
 
-def clean_bcws(raw: pd.DataFrame, fire_types=("Fire",), min_size_ha: float = 0.0) -> pd.DataFrame:
-    """Normalise to columns: date, lat, lon, cause, size_ha."""
+def fetch_bcws_current() -> pd.DataFrame:
+    """Fires of the fire year in progress (never cached: it changes daily)."""
+    return _fetch_layer(BCWS_CURRENT_LAYER, PROPS + ",FIRE_NUMBER,GEOGRAPHIC_DESCRIPTION")
+
+
+def merge_layers(historical: pd.DataFrame, current: pd.DataFrame) -> pd.DataFrame:
+    """Historical + current records, without double-counting a fire year present in both
+    (around the April rollover the closed year can appear in both layers)."""
+    if current.empty:
+        return historical
+    hist = historical[~historical["FIRE_YEAR"].isin(current["FIRE_YEAR"].unique())]
+    return pd.concat([hist, current], ignore_index=True)
+
+
+def fetch_recent(cfg: Config, year_from: int) -> pd.DataFrame:
+    """Every record from ``year_from`` up to today, for nowcasting. Closed fire years rarely
+    change, so a cached copy is used if the historical layer is unavailable."""
+    try:
+        hist = fetch_bcws(cfg, year_from=year_from, force=True)
+    except requests.RequestException:
+        cache = cfg.path("data_dir", "raw") / f"bcws_incidents_{year_from}.parquet"
+        if not cache.exists():
+            raise
+        print(f"historical layer unavailable; using cached {cache.name}")
+        hist = pd.read_parquet(cache)
+    return merge_layers(hist, fetch_bcws_current())
+
+
+def clean_bcws(raw: pd.DataFrame, fire_types=("Fire",), min_size_ha: float = 0.0,
+               extra: tuple[str, ...] = ()) -> pd.DataFrame:
+    """Normalise to columns: date, lat, lon, cause, size_ha (plus any ``extra`` raw columns)."""
     df = raw.copy()
     df = df[df["FIRE_TYPE"].isin(fire_types)]
     df["date"] = pd.to_datetime(df["IGNITION_DATE"].astype("string").str[:10], errors="coerce")
@@ -63,7 +110,8 @@ def clean_bcws(raw: pd.DataFrame, fire_types=("Fire",), min_size_ha: float = 0.0
     # one year (the agency fire year straddles the calendar year boundary).
     df = df[(df["date"].dt.year - df["FIRE_YEAR"]).abs() <= 1]
     df = df[df["size_ha"].fillna(0) >= min_size_ha]
-    return df[["date", "lat", "lon", "cause", "size_ha"]].reset_index(drop=True)
+    keep = ["date", "lat", "lon", "cause", "size_ha"] + [c for c in extra if c in df.columns]
+    return df[keep].reset_index(drop=True)
 
 
 def fetch_firms(cfg: Config, map_key: str, source: str = "VIIRS_SNPP_SP") -> pd.DataFrame:
